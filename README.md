@@ -1,5 +1,7 @@
 # **Distributed and Decentralised Systems** Course Project
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/dds-project-f19/dds-backend)](https://goreportcard.com/report/github.com/dds-project-f19/dds-backend)
+[![MIT](https://img.shields.io/github/license/dds-project-f19/dds-backend)](https://raw.githubusercontent.com/dds-project-f19/dds-backend/master/LICENSE)
+![SIZE](https://img.shields.io/github/repo-size/dds-project-f19/dds-backend)
 ### Configure database link (mysql) /config/config.yaml:
 ```
 dsn: "login:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local"
@@ -20,12 +22,6 @@ go install your/go/path/src/dds-backend
 
 now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
 
-Now the project is in 
-
-### How to run:
-```
-go run main.go
-```
 
 ### API Description (to be moved to wiki later):
 TODO:
