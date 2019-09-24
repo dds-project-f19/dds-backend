@@ -1,0 +1,4 @@
+addr: :9000
+
+dsn: "root:ddspassword14882@tcp(127.0.0.1:3306)/ddstest?charset=utf8&parseTime=True&loc=Local"
+max_idle_conn: 100

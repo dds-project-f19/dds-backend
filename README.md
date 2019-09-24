@@ -1,43 +1,93 @@
-# Welcome to Revel
+# **Distributed and Decentralised Systems** Course Project
 
-A high-productivity web framework for the [Go language](http://www.golang.org/).
+### Configure database link (mysql) /config/config.yaml:
+```
+dsn: "login:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local"
+```
 
+### Build and Run:
+```shell script
+go get -u github.com/go-sql-driver/mysql
+go get -u github.com/jinzhu/gorm
+go get -u github.com/dds-project-f19/dds-backend
+```
 
-### Start the web server:
+all packages should be now located at `$GOPATH/src`
 
-   revel run myapp
+```shell script
+go install your/go/path/src/dds-backend
+```
 
-### Go to http://localhost:9000/ and you'll see:
+now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
 
-    "It works"
+Now the project is in 
 
-## Code Layout
+### How to run:
+```
+go run main.go
+```
 
-The directory structure of a generated Revel application:
+### API Description (to be moved to wiki later):
+TODO:
+* Add auth tokens
+* Decide on auth model
+* Add admin user
 
-    conf/             Configuration directory
-        app.conf      Main app configuration file
-        routes        Routes definition file
+Ping:
+> GET /ping
 
-    app/              App sources
-        init.go       Interceptor registration
-        controllers/  App controllers go here
-        views/        Templates directory
+Expected:
+```
+PONG
+```
 
-    messages/         Message files
+Register User:
+> POST /users/register
 
-    public/           Public static assets
-        css/          CSS files
-        js/           Javascript files
-        images/       Image files
+Request:
+```json
+{
+	"username": "username",
+	"name": "name",
+	"password": "password"
+}
+```
+Expected:
+```
+{
+    "message": "User created successfully",
+    "status": "success"
+}
+```
 
-    tests/            Test suites
+Get Users list:
+> GET /users/list
 
+Expected:
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "created_at": "2019-09-24T20:49:00+03:00",
+            "updated_at": "2019-09-24T20:49:00+03:00",
+            "username": "myusername",
+            "name": "myname"
+        },
+        {
+            "id": 2,
+            "created_at": "2019-09-24T20:55:01+03:00",
+            "updated_at": "2019-09-24T20:56:35+03:00",
+            "username": "myusername2",
+            "name": "myname2"
+        }
+    ],
+    "status": "success"
+}
+```
 
-## Help
+Delete User:
+> DELETE /users/remove/123
 
-* The [Getting Started with Revel](http://revel.github.io/tutorial/gettingstarted.html).
-* The [Revel guides](http://revel.github.io/manual/index.html).
-* The [Revel sample apps](http://revel.github.io/examples/index.html).
-* The [API documentation](https://godoc.org/github.com/revel/revel).
-
+Update User details:
+> PATCH /users/edit/123
