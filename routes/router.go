@@ -11,12 +11,12 @@ func InitRouter() *gin.Engine {
 	users := router.Group("/users")
 	{
 		user := new(controllers.User)
-		users.GET("/list", user.Index)
+		users.POST("/list", user.ListUsers)
+		users.POST("/login", user.Login)
 		users.POST("/register", user.Store)
 		users.PATCH("/edit/:id", user.Update)
 		users.DELETE("/remove/:id", user.Destroy)
 		users.GET("/get/:id", user.Show)
-
 	}
 
 	ping := new(controllers.Ping)

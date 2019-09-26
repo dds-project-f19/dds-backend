@@ -30,7 +30,7 @@ func Get() *Config {
 func GetDefault() *Config {
 	return &Config{
 		Addr:        ":9000",
-		DSN:         "root:ddspassword14882@tcp(127.0.0.1:3306)/ddstest?charset=utf8&parseTime=True&loc=Local",
+		DSN:         "root:ddspassword14882@tcp(127.0.0.1:3306)/ddstest?charset=utf8&parseTime=True&loc=Local", // TODO: refactor
 		MaxIdleConn: 100,
 	}
 }

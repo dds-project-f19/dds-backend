@@ -11,6 +11,7 @@ dsn: "login:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=
 ```shell script
 go get -u github.com/go-sql-driver/mysql
 go get -u github.com/jinzhu/gorm
+go get -u github.com/gin-gonic/gin
 go get -u github.com/dds-project-f19/dds-backend
 ```
 
@@ -45,6 +46,9 @@ Request:
 {
 	"username": "username",
 	"name": "name",
+    "surname": "surname",
+    "phone": "phone",
+    "address": "address",
 	"password": "password"
 }
 ```
@@ -56,8 +60,34 @@ Expected:
 }
 ```
 
+User Login:
+> POST /users/login
+
+Request:
+```json
+{
+  "username": "username",
+  "password": "password"
+}
+```
+
+Expected:
+```json
+{
+    "status": "success"
+}
+```
+
 Get Users list:
-> GET /users/list
+> POST /users/list
+
+Request:
+```json
+{
+  "username": "admin",
+  "password": "admin"
+}
+```
 
 Expected:
 ```json
