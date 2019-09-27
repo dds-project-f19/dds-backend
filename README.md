@@ -2,12 +2,13 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/dds-project-f19/dds-backend)](https://goreportcard.com/report/github.com/dds-project-f19/dds-backend)
 [![MIT](https://img.shields.io/github/license/dds-project-f19/dds-backend)](https://raw.githubusercontent.com/dds-project-f19/dds-backend/master/LICENSE)
 ![SIZE](https://img.shields.io/github/repo-size/dds-project-f19/dds-backend)
-### Configure database link (mysql) /config/config.yaml:
-```
-dsn: "login:password@tcp(127.0.0.1:3306)/dbname?charset=utf8&parseTime=True&loc=Local"
-```
 
 ### Build and Run:
+
+1 Configure database link (mysql) /config/config.yaml:
+
+2 Get dependencies (actually you can do it with just `go get ./.`)
+
 ```shell script
 go get -u github.com/go-sql-driver/mysql
 go get -u github.com/jinzhu/gorm
@@ -17,9 +18,13 @@ go get -u github.com/dds-project-f19/dds-backend
 
 all packages should be now located at `$GOPATH/src`
 
+3 Build
+
 ```shell script
 go install your/go/path/src/dds-backend
 ```
+
+4 Run
 
 now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
 
@@ -28,9 +33,10 @@ now you can launch with executable located at `$GOPATH/bin/` called `dds-backend
 TODO:
 * Add auth tokens
 * Decide on auth model
-* Add admin user
 
-Ping:
+
+
+#### Ping
 > GET /ping
 
 Expected:
@@ -38,7 +44,7 @@ Expected:
 PONG
 ```
 
-Register User:
+#### Register User
 > POST /users/register
 
 Request:
@@ -60,7 +66,7 @@ Expected:
 }
 ```
 
-User Login:
+#### User Login
 > POST /users/login
 
 Request:
@@ -78,7 +84,7 @@ Expected:
 }
 ```
 
-Get Users list:
+#### Get Users list
 > POST /users/list
 
 Request:
@@ -111,9 +117,3 @@ Expected:
     "status": "success"
 }
 ```
-
-Delete User:
-> DELETE /users/remove/123
-
-Update User details:
-> PATCH /users/edit/123
