@@ -7,7 +7,7 @@
 
 1 Configure database link (mysql) /config/config.yaml:
 
-2 Get dependencies (actually you can do it with just `go get ./.`)
+2 Get dependencies
 
 ```shell script
 go get -u github.com/go-sql-driver/mysql
