@@ -25,8 +25,8 @@ func main() {
 	router := routes.InitRouter()
 
 	router.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
-		AllowOrigins:     []string{"*"},
+		AllowAllOrigins: true,
+		//AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"*"},
 		AllowHeaders:     []string{"*"},
 		ExposeHeaders:    []string{"*"},
