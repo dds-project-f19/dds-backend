@@ -36,7 +36,7 @@ Copy `$GOPATH/src/dds-backend/config.yaml` to location of your binary (which is 
 now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
 
 
-### API Descri~~~~ption (to be moved to wiki later):
+### API Description (to be moved to wiki later):
 TODO:
 * Add auth tokens
 * Decide on auth model
