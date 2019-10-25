@@ -26,8 +26,10 @@ git clone github.com/dds-project-f19/dds-backend
 4 Build
 
 ```shell script
-go install your/go/path/src/dds-backend
+go install $GOPATH/src/dds-backend
 ```
+
+Copy `$GOPATH/src/dds-backend/config.yaml` to location of your binary (which is located at `$GOPATH/bin/` after install)
 
 5 Run
 
