@@ -14,23 +14,27 @@ go get -u github.com/go-sql-driver/mysql
 go get -u github.com/jinzhu/gorm
 go get -u github.com/gin-gonic/gin
 go get -u github.com/gin-contrib/cors
-go get -u github.com/dds-project-f19/dds-backend
+
+```
+3 Get server
+
+INSIDE $GOPATH/src
+```shell script
+git clone github.com/dds-project-f19/dds-backend
 ```
 
-all packages should be now located at `$GOPATH/src`
-
-3 Build
+4 Build
 
 ```shell script
 go install your/go/path/src/dds-backend
 ```
 
-4 Run
+5 Run
 
 now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
 
 
-### API Description (to be moved to wiki later):
+### API Descri~~~~ption (to be moved to wiki later):
 TODO:
 * Add auth tokens
 * Decide on auth model
