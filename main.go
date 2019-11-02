@@ -5,17 +5,13 @@ import (
 	"dds-backend/database"
 	"dds-backend/routes"
 	"fmt"
-	"github.com/gin-contrib/cors"
-	"time"
 )
 
 func main() {
-	if err := config.Load("config.yaml"); err != nil {
-		fmt.Println("Failed to load configuration: " + err.Error())
-		return
-	}
+	currentConfig := config.LoadConfigFromCmdArgs()
+	generalConfig := config.GetDefaultGeneralConfig()
 
-	db, err := database.InitDB()
+	db, err := database.InitDB(currentConfig, generalConfig)
 	if err != nil {
 		fmt.Println("error opening database: " + err.Error())
 		return
@@ -24,15 +20,5 @@ func main() {
 
 	router := routes.InitRouter()
 
-	router.Use(cors.New(cors.Config{
-		AllowAllOrigins: true,
-		//AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"*"},
-		AllowHeaders:     []string{"*"},
-		ExposeHeaders:    []string{"*"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-
-	router.Run(config.Get().Addr)
+	router.Run(generalConfig.Address)
 }

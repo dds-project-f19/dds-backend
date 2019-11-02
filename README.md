@@ -20,7 +20,7 @@ go get -u github.com/gin-contrib/cors
 
 INSIDE $GOPATH/src
 ```shell script
-git clone github.com/dds-project-f19/dds-backend
+git clone https://github.com/dds-project-f19/dds-backend
 ```
 
 4 Build
