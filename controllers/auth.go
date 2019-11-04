@@ -6,6 +6,7 @@ import (
 	"dds-backend/models"
 	"encoding/hex"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"math/rand"
 	"strings"
 	"time"
@@ -18,7 +19,7 @@ const ( // token generator constants
 
 // Claim types, greater values include previous claims
 const (
-	Worker int = iota
+	Worker int = iota + 1
 	Manager
 )
 
@@ -39,16 +40,18 @@ func Authorize(username, password string) (string, error) {
 	auth := Auth{Username: username}
 	tx := database.DB.Begin() // begin transaction
 
-	if err := tx.Find(&user).Error; err != nil { // check if credentials are valid
-		return "", err
+	var count int
+	if tx.Model(&models.User{}).Where(&user).Count(&count); count <= 0 { // check if credentials are valid
+		return "", errors.New("credentials invalid")
 	}
 	now := time.Now()
-	if tx.Find(&auth).RecordNotFound() { // auth record not found
+	if tx.Model(&Auth{}).Where(&auth).Count(&count); count <= 0 { // auth record not found
 		auth.Claim = user.Claim
 		auth.Expiration = now.Add(ExpirationDuration)
 		auth.Token = GenerateNewToken(username)
 		tx.Create(&auth)
 	} else { // auth record found
+		tx.Model(&Auth{}).Where(&auth).First(&auth)
 		if now.After(auth.Expiration) { // auth record expired
 			auth.Token = GenerateNewToken(username, auth.Token)
 		}
@@ -74,13 +77,21 @@ func (e *TokenExpirationError) Error() string {
 // find auth record and check it's validity:
 // compare requested claim with available claim
 // check for expiration, in case of error return `TokenExpirationError`
+// prolong expiration on successful validation
 func Authenticate(token string, requiredClaim int) error {
 	auth := Auth{Token: token}
-	if err := database.DB.Find(&auth).Error; err != nil { // auth record found
-		return err
+	var count int
+	if database.DB.Model(&Auth{}).Where(&auth).Count(&count); count <= 0 { // auth record found
+		return errors.New("token not found")
 	}
+	database.DB.Model(&Auth{}).Where(&auth).First(&auth)
 	if time.Now().After(auth.Expiration) {
 		return &TokenExpirationError{err: "token has expired"}
+	} else {
+		auth.Expiration = time.Now().Add(ExpirationDuration)
+		if err := database.DB.Save(&auth).Error; err != nil {
+			return err
+		}
 	}
 	if auth.Claim < requiredClaim {
 		return errors.New("claim has insufficient rights")
@@ -118,4 +129,25 @@ func GenerateRandomString(length int) string {
 		b.WriteRune(chars[rand.Intn(len(chars))])
 	}
 	return b.String()
+}
+
+func fetchToken(c *gin.Context) (string, error) {
+	authLine := c.Request.Header["Authorization"]
+	if len(authLine) > 0 {
+		return authLine[0], nil
+	} else {
+		return "", errors.New("authorization missing")
+	}
+}
+
+func checkAuthorization(c *gin.Context, claim int) error {
+	token, err := fetchToken(c) // get authorization token from request header
+	if err != nil {
+		return err
+	}
+	err = Authenticate(token, claim) // check if token is valid
+	if err != nil {
+		return err
+	}
+	return nil
 }

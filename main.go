@@ -2,6 +2,7 @@ package main
 
 import (
 	"dds-backend/config"
+	"dds-backend/controllers"
 	"dds-backend/database"
 	"dds-backend/routes"
 	"fmt"
@@ -18,7 +19,9 @@ func main() {
 	}
 	defer db.Close()
 
-	router := routes.InitRouter()
+	controllers.InitializeDefaultUsers() // create user `admin`
 
-	router.Run(generalConfig.Address)
+	go routes.InitFrontendRouter().Run(":80") // run frontend server
+	router := routes.InitRouter()
+	router.Run(generalConfig.Address) // run backend router
 }

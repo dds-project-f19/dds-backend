@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"crypto/sha256"
 	"dds-backend/database"
 	"dds-backend/models"
-	"encoding/hex"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"net/http"
 )
 
@@ -13,38 +13,33 @@ type User struct {
 	ControllerBase
 }
 
+func InitializeDefaultUsers() {
+	admin := models.User{
+		Model:    gorm.Model{},
+		Username: "admin",
+		Password: "password",
+		Name:     "Maksim",
+		Surname:  "Surkov",
+		Phone:    "123",
+		Address:  "Github str. 1, nil",
+		Claim:    10,
+	}
+	if err := database.DB.Create(&admin).Error; err != nil {
+		fmt.Print("admin already exists")
+	}
+}
+
 func (a *User) ListUsers(c *gin.Context) {
-	var users []models.User
-	var dbUser models.User
-
-	if err := c.ShouldBind(&dbUser); err == nil {
-		password := []byte(dbUser.Password)
-		ctx := sha256.New()
-		ctx.Write(password)
-		cipherStr := ctx.Sum(nil)
-		hexpass := hex.EncodeToString(cipherStr)
-
-		if database.DB.Where("username = ?", dbUser.Username).First(&dbUser).Error != nil {
-			a.JsonFail(c, http.StatusNotFound, "User not found")
-			return
-		}
-
-		if hexpass != dbUser.Password {
-			a.JsonFail(c, http.StatusForbidden, "Wrong password")
-			return
-		}
-
-		if dbUser.Username != "admin" {
-			a.JsonFail(c, http.StatusForbidden, "Unauthorized")
-			return
-		}
-
-		database.DB.Select("*").Order("id").Find(&users)
-		a.JsonSuccess(c, http.StatusOK, gin.H{"data": users})
-	} else {
-		a.JsonFail(c, http.StatusBadRequest, err.Error())
+	if err := checkAuthorization(c, Manager); err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
 	}
 
+	var users []models.User
+	resp := database.DB.Find(&users)
+	if err := resp.Error; err != nil {
+		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
+	}
 }
 
 func (a *User) Login(c *gin.Context) {
@@ -52,13 +47,17 @@ func (a *User) Login(c *gin.Context) {
 		Username string `binding:"required"`
 		Password string `binding:"required"`
 	}
-	var body RequestBody
+	var request RequestBody
 
-	if err := c.ShouldBind(&body); err == nil {
+	if err := c.ShouldBind(&request); err == nil {
 
-		//token, err := Authorize(body.Username, hexpass)
+		token, err := Authorize(request.Username, request.Password)
+		if err != nil {
+			a.JsonFail(c, http.StatusForbidden, err.Error())
+			return
+		}
 
-		a.JsonSuccess(c, http.StatusOK, gin.H{})
+		a.JsonSuccess(c, http.StatusOK, gin.H{"token": token})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}
@@ -70,39 +69,49 @@ func (a *User) Register(c *gin.Context) {
 	if err := c.Bind(&newUser); err == nil {
 		tx := database.DB.Begin()
 		existingUser := models.User{Username: newUser.Username}
-		tx.Find(&existingUser)
-		if tx.RecordNotFound() {
-
+		var count int
+		tx.Model(&models.User{}).Where(&existingUser).Count(&count)
+		if count <= 0 {
+			newUser.Password = Hash(newUser.Password)
+			tx.Create(newUser)
 		} else {
-
+			a.JsonFail(c, http.StatusConflict, "user already exists")
+			return
 		}
-
-		//password := []byte(request.Password)
-		//ctx := sha256.New()
-		//ctx.Write(password)
-		//cipherStr := ctx.Sum(nil)
-		//user := models.User(request)
-
-		//if err := database.DB.Create(&user).Error; err != nil {
-		//	a.JsonFail(c, http.StatusBadRequest, err.Error())
-		//	return
-		//}
-
-		a.JsonSuccess(c, http.StatusCreated, gin.H{"message": "User created successfully"})
+		if err := tx.Error; err != nil {
+			tx.Rollback()
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err := tx.Commit().Error; err != nil {
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		token, err := Authorize(newUser.Username, newUser.Password)
+		if err != nil {
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+		}
+		a.JsonSuccess(c, http.StatusCreated, gin.H{"token": token, "message": "user created successfully"})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}
 }
 
 func (a *User) Update(c *gin.Context) {
+	if err := checkAuthorization(c, Manager); err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
 	var request models.User
 
 	if err := c.ShouldBind(&request); err == nil {
-		var user models.User
-		if database.DB.First(&user, c.Param("id")).Error != nil {
-			a.JsonFail(c, http.StatusNotFound, "User not found")
+
+		user := models.User{Username: c.Param("username")}
+		if err := database.DB.Find(&user).Error; err != nil {
+			a.JsonFail(c, http.StatusNotFound, err.Error())
 			return
 		}
+		user = request
 
 		if err := database.DB.Save(&user).Error; err != nil {
 			a.JsonFail(c, http.StatusBadRequest, err.Error())
@@ -115,30 +124,34 @@ func (a *User) Update(c *gin.Context) {
 	}
 }
 
-func (a *User) Show(c *gin.Context) {
-	var user models.User
-
-	if database.DB.Select("id, name, username, created_at, updated_at").First(&user, c.Param("id")).Error != nil {
-		a.JsonFail(c, http.StatusNotFound, "User not found")
+func (a *User) Get(c *gin.Context) {
+	if err := checkAuthorization(c, Manager); err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	a.JsonSuccess(c, http.StatusCreated, gin.H{"data": user})
+	user := models.User{Username: c.Param("username")}
+	if database.DB.Find(&user).RecordNotFound() {
+		a.JsonFail(c, http.StatusNotFound, "user not found")
+	}
+	a.JsonSuccess(c, http.StatusCreated, user.ToMap())
 }
 
 func (a *User) Destroy(c *gin.Context) {
-	var user models.User
-
-	if database.DB.First(&user, c.Param("id")).Error != nil {
-		a.JsonFail(c, http.StatusNotFound, "User not found")
+	if err := checkAuthorization(c, Manager); err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	if err := database.DB.Unscoped().Delete(&user).Error; err != nil {
+	user := models.User{Username: c.Param("username")}
+	if err := database.DB.Find(&user).Error; err != nil {
+		a.JsonFail(c, http.StatusNotFound, err.Error())
+		return
+	}
+	if err := database.DB.Delete(&user).Error; err != nil {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	a.JsonSuccess(c, http.StatusCreated, gin.H{})
+	a.JsonSuccess(c, http.StatusOK, gin.H{"message": "user deleted successfully"})
 
 }

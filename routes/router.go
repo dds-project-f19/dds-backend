@@ -3,7 +3,6 @@ package routes
 import (
 	"dds-backend/controllers"
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,9 +18,9 @@ func InitRouter() *gin.Engine {
 		users.POST("/list", user.ListUsers)
 		users.POST("/login", user.Login)
 		users.POST("/register", user.Register)
-		users.PATCH("/edit/:id", user.Update)
-		users.DELETE("/remove/:id", user.Destroy)
-		users.GET("/get/:id", user.Show)
+		users.PATCH("/edit/:username", user.Update)
+		users.DELETE("/remove/:username", user.Destroy)
+		users.GET("/get/:username", user.Get)
 	}
 	game := router.Group("/inventory")
 	{
@@ -34,9 +33,6 @@ func InitRouter() *gin.Engine {
 
 	ping := new(controllers.Ping)
 	router.GET("/ping", ping.Ping)
-
-	// serve frontend source
-	router.Use(static.Serve("/", static.LocalFile("./client/build", true)))
 
 	return router
 

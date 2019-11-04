@@ -12,7 +12,19 @@ type User struct {
 	Surname  string
 	Phone    string `gorm:"unique"`
 	Address  string
-	Claim    int `gorm:"not null"`
+	Claim    int `gorm:"not null;default:1"`
+}
+
+func (u *User) ToMap() map[string]interface{} {
+	result := make(map[string]interface{})
+	result["username"] = u.Username
+	result["password"] = u.Password
+	result["name"] = u.Name
+	result["surname"] = u.Surname
+	result["phone"] = u.Phone
+	result["address"] = u.Address
+	result["claim"] = u.Claim
+	return result
 }
 
 //type Worker struct {
