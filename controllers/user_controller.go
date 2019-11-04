@@ -15,17 +15,16 @@ type User struct {
 
 func (a *User) ListUsers(c *gin.Context) {
 	var users []models.User
-	var request LoginRequest
 	var dbUser models.User
 
-	if err := c.ShouldBind(&request); err == nil {
-		password := []byte(request.Password)
+	if err := c.ShouldBind(&dbUser); err == nil {
+		password := []byte(dbUser.Password)
 		ctx := sha256.New()
 		ctx.Write(password)
 		cipherStr := ctx.Sum(nil)
 		hexpass := hex.EncodeToString(cipherStr)
 
-		if database.DB.Where("username = ?", request.Username).First(&dbUser).Error != nil {
+		if database.DB.Where("username = ?", dbUser.Username).First(&dbUser).Error != nil {
 			a.JsonFail(c, http.StatusNotFound, "User not found")
 			return
 		}
@@ -49,25 +48,15 @@ func (a *User) ListUsers(c *gin.Context) {
 }
 
 func (a *User) Login(c *gin.Context) {
-	var request LoginRequest
-	var dbUser models.User
+	type RequestBody struct {
+		Username string `binding:"required"`
+		Password string `binding:"required"`
+	}
+	var body RequestBody
 
-	if err := c.ShouldBind(&request); err == nil {
-		password := []byte(request.Password)
-		ctx := sha256.New()
-		ctx.Write(password)
-		cipherStr := ctx.Sum(nil)
-		hexpass := hex.EncodeToString(cipherStr)
+	if err := c.ShouldBind(&body); err == nil {
 
-		if database.DB.Where("username = ?", request.Username).First(&dbUser).Error != nil {
-			a.JsonFail(c, http.StatusNotFound, "User not found")
-			return
-		}
-
-		if hexpass != dbUser.Password {
-			a.JsonFail(c, http.StatusForbidden, "Wrong password")
-			return
-		}
+		//token, err := Authorize(body.Username, hexpass)
 
 		a.JsonSuccess(c, http.StatusOK, gin.H{})
 	} else {
@@ -75,35 +64,29 @@ func (a *User) Login(c *gin.Context) {
 	}
 }
 
-func (a *User) Store(c *gin.Context) {
-	var request CreateRequest
+func (a *User) Register(c *gin.Context) {
+	var newUser models.User
 
-	if err := c.ShouldBind(&request); err == nil {
-		var count int
-		database.DB.Model(&models.User{}).Where("username = ?", request.Username).Count(&count)
+	if err := c.Bind(&newUser); err == nil {
+		tx := database.DB.Begin()
+		existingUser := models.User{Username: newUser.Username}
+		tx.Find(&existingUser)
+		if tx.RecordNotFound() {
 
-		if count > 0 {
-			a.JsonFail(c, http.StatusBadRequest, "Username already exists")
-			return
+		} else {
+
 		}
 
-		password := []byte(request.Password)
-		ctx := sha256.New()
-		ctx.Write(password)
-		cipherStr := ctx.Sum(nil)
-		user := models.User{
-			Username: request.Username,
-			Name:     request.Name,
-			Surname:  request.Surname,
-			Phone:    request.Phone,
-			Address:  request.Address,
-			Password: hex.EncodeToString(cipherStr),
-		}
+		//password := []byte(request.Password)
+		//ctx := sha256.New()
+		//ctx.Write(password)
+		//cipherStr := ctx.Sum(nil)
+		//user := models.User(request)
 
-		if err := database.DB.Create(&user).Error; err != nil {
-			a.JsonFail(c, http.StatusBadRequest, err.Error())
-			return
-		}
+		//if err := database.DB.Create(&user).Error; err != nil {
+		//	a.JsonFail(c, http.StatusBadRequest, err.Error())
+		//	return
+		//}
 
 		a.JsonSuccess(c, http.StatusCreated, gin.H{"message": "User created successfully"})
 	} else {
@@ -112,7 +95,7 @@ func (a *User) Store(c *gin.Context) {
 }
 
 func (a *User) Update(c *gin.Context) {
-	var request UpdateRequest
+	var request models.User
 
 	if err := c.ShouldBind(&request); err == nil {
 		var user models.User
@@ -120,8 +103,6 @@ func (a *User) Update(c *gin.Context) {
 			a.JsonFail(c, http.StatusNotFound, "User not found")
 			return
 		}
-
-		user.Name = request.Name
 
 		if err := database.DB.Save(&user).Error; err != nil {
 			a.JsonFail(c, http.StatusBadRequest, err.Error())
@@ -160,22 +141,4 @@ func (a *User) Destroy(c *gin.Context) {
 
 	a.JsonSuccess(c, http.StatusCreated, gin.H{})
 
-}
-
-type UpdateRequest struct {
-	Name string `form:"name" json:"name" binding:"required"`
-}
-
-type CreateRequest struct {
-	Username string `form:"username" json:"username" binding:"required"`
-	Name     string `form:"name" json:"name" binding:"required"`
-	Surname  string `form:"surname" json:"surname" binding:"required"`
-	Phone    string `form:"phone" json:"phone" binding:"required"`
-	Address  string `form:"address" json:"address" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
-}
-
-type LoginRequest struct {
-	Username string `form:"username" json:"username" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
 }

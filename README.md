@@ -57,12 +57,12 @@ PONG
 Request:
 ```json
 {
-	"username": "username",
-	"name": "name",
+    "username": "username",
+    "name": "name",
     "surname": "surname",
     "phone": "phone",
     "address": "address",
-	"password": "password"
+    "password": "password"
 }
 ```
 Expected:
@@ -85,9 +85,10 @@ Request:
 ```
 
 Expected:
+
 ```json
 {
-    "status": "success"
+  "status": "success"
 }
 ```
 

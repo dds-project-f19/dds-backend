@@ -1,15 +1,17 @@
 package models
 
+import "github.com/jinzhu/gorm"
+
 type ToolType struct {
-	ModelBase
-	ToolId      int    `gorm:"type:integer;unique_index" json:"tool_id,omitempty"`
-	Description string `gorm:"type:varchar(30);unique_index" json:"tool_id,omitempty"`
+	gorm.Model
+	ToolId      int
+	Description string
 }
 
 type GameState struct {
-	ModelBase
-	Username string `gorm:"type:varchar(30);unique_index" json:"username,omitempty"`
-	GameType string `gorm:"type:varchar(30);" json:"game_state,omitempty"`
+	gorm.Model
+	Username string
+	GameType string
 }
 
 type Game struct {

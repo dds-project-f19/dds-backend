@@ -3,19 +3,22 @@ package routes
 import (
 	"dds-backend/controllers"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
 func InitRouter() *gin.Engine {
 	router := gin.Default()
+
+	// setup CORS policy
+	router.Use(cors.Default())
 
 	users := router.Group("/users")
 	{
 		user := new(controllers.User)
 		users.POST("/list", user.ListUsers)
 		users.POST("/login", user.Login)
-		users.POST("/register", user.Store)
+		users.POST("/register", user.Register)
 		users.PATCH("/edit/:id", user.Update)
 		users.DELETE("/remove/:id", user.Destroy)
 		users.GET("/get/:id", user.Show)
@@ -33,18 +36,7 @@ func InitRouter() *gin.Engine {
 	router.GET("/ping", ping.Ping)
 
 	// serve frontend source
-	//router.Use(static.Serve("/", static.LocalFile("./client/build", true)))
-
-	// setup CORS policy
-	router.Use(cors.New(cors.Config{
-		AllowAllOrigins: true,
-		//AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"*"},
-		AllowHeaders:     []string{"*"},
-		ExposeHeaders:    []string{"*"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
+	router.Use(static.Serve("/", static.LocalFile("./client/build", true)))
 
 	return router
 
