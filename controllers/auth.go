@@ -35,8 +35,8 @@ type Auth struct {
 // if already authorized return existing token, prolong expiration
 // if authorization token expired return new token, delete existing token
 // if no authorization existed, return new token
-func Authorize(username, password string) (string, error) {
-	user := models.User{Username: username, Password: Hash(password)}
+func Authorize(username, passwordHash string) (string, error) {
+	user := models.User{Username: username, Password: passwordHash}
 	auth := Auth{Username: username}
 	tx := database.DB.Begin() // begin transaction
 
@@ -73,12 +73,32 @@ func (e *TokenExpirationError) Error() string {
 	return e.err
 }
 
+type AuthenticationCondition func(auth *Auth) error
+
+func HasEqualOrHigherClaim(claim int) AuthenticationCondition {
+	return func(auth *Auth) error {
+		if auth.Claim < claim {
+			return errors.New("insufficient user rights")
+		}
+		return nil
+	}
+}
+
+func HasSameUsername(username string) AuthenticationCondition {
+	return func(auth *Auth) error {
+		if auth.Username != username {
+			return errors.New("access to another user data is forbidden")
+		}
+		return nil
+	}
+}
+
 // accept - token claim
 // find auth record and check it's validity:
 // compare requested claim with available claim
 // check for expiration, in case of error return `TokenExpirationError`
 // prolong expiration on successful validation
-func Authenticate(token string, requiredClaim int) error {
+func Authenticate(token string, condition AuthenticationCondition) error {
 	auth := Auth{Token: token}
 	var count int
 	if database.DB.Model(&Auth{}).Where(&auth).Count(&count); count <= 0 { // auth record found
@@ -87,14 +107,15 @@ func Authenticate(token string, requiredClaim int) error {
 	database.DB.Model(&Auth{}).Where(&auth).First(&auth)
 	if time.Now().After(auth.Expiration) {
 		return &TokenExpirationError{err: "token has expired"}
-	} else {
+	}
+	if err := condition(&auth); err != nil {
+		return err
+	}
+	if !time.Now().After(auth.Expiration) {
 		auth.Expiration = time.Now().Add(ExpirationDuration)
 		if err := database.DB.Save(&auth).Error; err != nil {
 			return err
 		}
-	}
-	if auth.Claim < requiredClaim {
-		return errors.New("claim has insufficient rights")
 	}
 	return nil
 }
@@ -140,12 +161,12 @@ func fetchToken(c *gin.Context) (string, error) {
 	}
 }
 
-func checkAuthorization(c *gin.Context, claim int) error {
+func checkAuthConditional(c *gin.Context, condition AuthenticationCondition) error {
 	token, err := fetchToken(c) // get authorization token from request header
 	if err != nil {
 		return err
 	}
-	err = Authenticate(token, claim) // check if token is valid
+	err = Authenticate(token, condition) // check if token is valid
 	if err != nil {
 		return err
 	}

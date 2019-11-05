@@ -29,8 +29,9 @@ func InitializeDefaultUsers() {
 	}
 }
 
+// TODO: check and move to manager controller
 func (a *User) ListUsers(c *gin.Context) {
-	if err := checkAuthorization(c, Manager); err != nil {
+	if err := checkAuthConditional(c, HasEqualOrHigherClaim(Manager)); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -50,13 +51,11 @@ func (a *User) Login(c *gin.Context) {
 	var request RequestBody
 
 	if err := c.ShouldBind(&request); err == nil {
-
-		token, err := Authorize(request.Username, request.Password)
+		token, err := Authorize(request.Username, Hash(request.Password))
 		if err != nil {
 			a.JsonFail(c, http.StatusForbidden, err.Error())
 			return
 		}
-
 		a.JsonSuccess(c, http.StatusOK, gin.H{"token": token})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
@@ -73,23 +72,25 @@ func (a *User) Register(c *gin.Context) {
 		tx.Model(&models.User{}).Where(&existingUser).Count(&count)
 		if count <= 0 {
 			newUser.Password = Hash(newUser.Password)
-			tx.Create(newUser)
+			err = tx.Create(&newUser).Error
+			if err != nil {
+				a.JsonFail(c, http.StatusBadRequest, err.Error())
+				tx.Rollback()
+				return
+			}
 		} else {
 			a.JsonFail(c, http.StatusConflict, "user already exists")
-			return
-		}
-		if err := tx.Error; err != nil {
 			tx.Rollback()
-			a.JsonFail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		if err := tx.Commit().Error; err != nil {
 			a.JsonFail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-		token, err := Authorize(newUser.Username, newUser.Password)
+		token, err := Authorize(newUser.Username, newUser.Password) // note password is already hashed
 		if err != nil {
 			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+			return
 		}
 		a.JsonSuccess(c, http.StatusCreated, gin.H{"token": token, "message": "user created successfully"})
 	} else {
@@ -97,8 +98,9 @@ func (a *User) Register(c *gin.Context) {
 	}
 }
 
+// TODO: fix gorm requests
 func (a *User) Update(c *gin.Context) {
-	if err := checkAuthorization(c, Manager); err != nil {
+	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -124,8 +126,9 @@ func (a *User) Update(c *gin.Context) {
 	}
 }
 
+// TODO: fix gorm requests
 func (a *User) Get(c *gin.Context) {
-	if err := checkAuthorization(c, Manager); err != nil {
+	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -137,8 +140,9 @@ func (a *User) Get(c *gin.Context) {
 	a.JsonSuccess(c, http.StatusCreated, user.ToMap())
 }
 
+// TODO: fix and move to manager controller
 func (a *User) Destroy(c *gin.Context) {
-	if err := checkAuthorization(c, Manager); err != nil {
+	if err := checkAuthConditional(c, HasEqualOrHigherClaim(Manager)); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
