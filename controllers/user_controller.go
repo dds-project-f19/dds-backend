@@ -3,47 +3,15 @@ package controllers
 import (
 	"dds-backend/database"
 	"dds-backend/models"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	"net/http"
 )
 
-type User struct {
+type WorkerController struct {
 	ControllerBase
 }
 
-func InitializeDefaultUsers() {
-	admin := models.User{
-		Model:    gorm.Model{},
-		Username: "admin",
-		Password: "password",
-		Name:     "Maksim",
-		Surname:  "Surkov",
-		Phone:    "123",
-		Address:  "Github str. 1, nil",
-		Claim:    10,
-	}
-	if err := database.DB.Create(&admin).Error; err != nil {
-		fmt.Print("admin already exists")
-	}
-}
-
-// TODO: check and move to manager controller
-func (a *User) ListUsers(c *gin.Context) {
-	if err := checkAuthConditional(c, HasEqualOrHigherClaim(Manager)); err != nil {
-		a.JsonFail(c, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	var users []models.User
-	resp := database.DB.Find(&users)
-	if err := resp.Error; err != nil {
-		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
-	}
-}
-
-func (a *User) Login(c *gin.Context) {
+func (a *WorkerController) Login(c *gin.Context) {
 	type RequestBody struct {
 		Username string `binding:"required"`
 		Password string `binding:"required"`
@@ -62,7 +30,7 @@ func (a *User) Login(c *gin.Context) {
 	}
 }
 
-func (a *User) Register(c *gin.Context) {
+func (a *WorkerController) Register(c *gin.Context) {
 	var newUser models.User
 
 	if err := c.Bind(&newUser); err == nil {
@@ -98,8 +66,22 @@ func (a *User) Register(c *gin.Context) {
 	}
 }
 
+func (a *WorkerController) Get(c *gin.Context) {
+	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	user := models.User{Username: c.Param("username")}
+	if database.DB.Model(&models.User{}).Where(&user).First(&user).RecordNotFound() {
+		a.JsonFail(c, http.StatusNotFound, "user not found")
+		return
+	}
+	a.JsonSuccess(c, http.StatusCreated, user.ToMap())
+}
+
 // TODO: fix gorm requests
-func (a *User) Update(c *gin.Context) {
+func (a *WorkerController) Update(c *gin.Context) {
 	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -126,36 +108,10 @@ func (a *User) Update(c *gin.Context) {
 	}
 }
 
-// TODO: fix gorm requests
-func (a *User) Get(c *gin.Context) {
+func (a *WorkerController) CheckAccess(c *gin.Context) {
 	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
-		return
+	} else {
+		a.JsonSuccess(c, http.StatusOK, gin.H{"message": "you have access to perform this call"})
 	}
-
-	user := models.User{Username: c.Param("username")}
-	if database.DB.Find(&user).RecordNotFound() {
-		a.JsonFail(c, http.StatusNotFound, "user not found")
-	}
-	a.JsonSuccess(c, http.StatusCreated, user.ToMap())
-}
-
-// TODO: fix and move to manager controller
-func (a *User) Destroy(c *gin.Context) {
-	if err := checkAuthConditional(c, HasEqualOrHigherClaim(Manager)); err != nil {
-		a.JsonFail(c, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	user := models.User{Username: c.Param("username")}
-	if err := database.DB.Find(&user).Error; err != nil {
-		a.JsonFail(c, http.StatusNotFound, err.Error())
-		return
-	}
-	if err := database.DB.Delete(&user).Error; err != nil {
-		a.JsonFail(c, http.StatusBadRequest, err.Error())
-		return
-	}
-	a.JsonSuccess(c, http.StatusOK, gin.H{"message": "user deleted successfully"})
-
 }

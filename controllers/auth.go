@@ -17,10 +17,10 @@ const ( // token generator constants
 	TokenGenerationPayloadLength = 10
 )
 
-// Claim types, greater values include previous claims
-const (
-	Worker int = iota + 1
-	Manager
+const ( // Claim types, greater values include previous claims
+	Worker  = 1
+	Manager = 5
+	Admin   = 10
 )
 
 type Auth struct {

@@ -18,12 +18,10 @@ type User struct {
 func (u *User) ToMap() map[string]interface{} {
 	result := make(map[string]interface{})
 	result["username"] = u.Username
-	result["password"] = u.Password
 	result["name"] = u.Name
 	result["surname"] = u.Surname
 	result["phone"] = u.Phone
 	result["address"] = u.Address
-	result["claim"] = u.Claim
 	return result
 }
 
