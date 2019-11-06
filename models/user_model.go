@@ -24,16 +24,3 @@ func (u *User) ToMap() map[string]interface{} {
 	result["address"] = u.Address
 	return result
 }
-
-//type Worker struct {
-//	User
-//	GameType string   `form:"game_type" binding:"required" gorm:"type:varchar(64);not null;default:''" json:"game_type,omitempty"`
-//	Cells    []string `form:"cells" gorm:"type:varchar(64);not null" json:"cells,omitempty"`
-//}
-//
-//type InventoryItem struct {
-//	gorm.Model
-//	GameType string `form:"game_type" binding:"required" gorm:"type:varchar(64);not null;default:''" json:"password,omitempty"`
-//	ItemId   string `form:"item_id" binding:"required" gorm:"type:varchar(64);not null;default:''" json:"password,omitempty"`
-//	Count    int    `form:"password" binding:"required" gorm:"type:varchar(64);not null;default:''" json:"password,omitempty"`
-//}

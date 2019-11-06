@@ -30,6 +30,7 @@ func (a *WorkerController) Login(c *gin.Context) {
 	}
 }
 
+// TODO: add form validation!!!
 func (a *WorkerController) Register(c *gin.Context) {
 	var newUser models.User
 
@@ -67,22 +68,24 @@ func (a *WorkerController) Register(c *gin.Context) {
 }
 
 func (a *WorkerController) Get(c *gin.Context) {
-	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
+	auth, err := CheckAuthConditional(c)
+	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	user := models.User{Username: c.Param("username")}
+	user := models.User{Username: auth.Username}
 	if database.DB.Model(&models.User{}).Where(&user).First(&user).RecordNotFound() {
 		a.JsonFail(c, http.StatusNotFound, "user not found")
 		return
 	}
-	a.JsonSuccess(c, http.StatusCreated, user.ToMap())
+	a.JsonSuccess(c, http.StatusOK, user.ToMap())
 }
 
-// TODO: fix gorm requests
+// TODO: fix gorm requests and decide on update semantics
 func (a *WorkerController) Update(c *gin.Context) {
-	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
+	auth, err := CheckAuthConditional(c)
+	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -90,7 +93,7 @@ func (a *WorkerController) Update(c *gin.Context) {
 
 	if err := c.ShouldBind(&request); err == nil {
 
-		user := models.User{Username: c.Param("username")}
+		user := models.User{Username: auth.Username}
 		if err := database.DB.Find(&user).Error; err != nil {
 			a.JsonFail(c, http.StatusNotFound, err.Error())
 			return
@@ -109,9 +112,21 @@ func (a *WorkerController) Update(c *gin.Context) {
 }
 
 func (a *WorkerController) CheckAccess(c *gin.Context) {
-	if err := checkAuthConditional(c, HasSameUsername(c.Param("username"))); err != nil {
+	if _, err := CheckAuthConditional(c); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 	} else {
 		a.JsonSuccess(c, http.StatusOK, gin.H{"message": "you have access to perform this call"})
 	}
+}
+
+func (a *WorkerController) TakeItem(c *gin.Context) {
+
+}
+
+func (a *WorkerController) ReturnItem(c *gin.Context) {
+
+}
+
+func (a *WorkerController) AvailableItems(c *gin.Context) {
+
 }

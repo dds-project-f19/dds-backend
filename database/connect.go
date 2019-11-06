@@ -15,7 +15,7 @@ func InitDB(dbConfig config.DBConfig, generalConfig config.GeneralConfig) (*gorm
 	if err == nil {
 		db.DB().SetMaxIdleConns(generalConfig.MaxIdleConn)
 		DB = db
-		db.AutoMigrate(&models.User{})
+		db.AutoMigrate(&models.User{}, &models.Auth{})
 		return db, err
 	}
 	return nil, err

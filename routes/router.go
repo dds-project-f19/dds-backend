@@ -12,15 +12,17 @@ func InitRouter() *gin.Engine {
 	// setup CORS policy
 	router.Use(cors.Default())
 
-	users := router.Group("/users")
+	workers := router.Group("/worker")
 	{
 		user := new(controllers.WorkerController)
-		users.POST("/login", user.Login)
-		users.POST("/register", user.Register)
-		users.PATCH("/edit/:username", user.Update)
-		users.DELETE("/remove/:username", user.Destroy)
-		users.GET("/get/:username", user.Get)
+		workers.POST("/login", user.Login)
+		workers.POST("/register", user.Register)
+		workers.GET("/get", user.Get)
+		workers.PATCH("/update", user.Update)
+		workers.GET("/check_access", user.CheckAccess)
 	}
+	// TODO: consider using decorators for access management
+
 	//game := router.Group("/inventory")
 	//{
 	//	//gameState := new(controllers.GameState)

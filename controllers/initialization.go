@@ -18,7 +18,13 @@ func InitializeDefaultUsers() {
 		Address:  "Github str. 1, nil",
 		Claim:    Admin,
 	}
-	if err := database.DB.Create(&admin).Error; err != nil {
-		fmt.Print("admin already exists")
+	existingAdmin := models.User{Username: admin.Username}
+	if database.DB.Model(&models.User{}).Where(&existingAdmin).First(&existingAdmin).RecordNotFound() {
+		if err := database.DB.Create(&admin).Error; err != nil {
+			panic(err)
+		}
+	} else {
+		fmt.Println("*** Admin already exists ***")
 	}
+
 }
