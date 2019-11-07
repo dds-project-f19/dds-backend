@@ -11,7 +11,7 @@ func InitializeDefaultUsers() {
 	admin := models.User{
 		Model:    gorm.Model{},
 		Username: "admin",
-		Password: "password",
+		Password: Hash("password"),
 		Name:     "Maksim",
 		Surname:  "Surkov",
 		Phone:    "123",

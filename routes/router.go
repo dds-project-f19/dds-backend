@@ -14,13 +14,37 @@ func InitRouter() *gin.Engine {
 
 	workers := router.Group("/worker")
 	{
-		user := new(controllers.WorkerController)
-		workers.POST("/login", user.Login)
-		workers.POST("/register", user.Register)
-		workers.GET("/get", user.Get)
-		workers.PATCH("/update", user.Update)
-		workers.GET("/check_access", user.CheckAccess)
+		worker := new(controllers.WorkerController)
+		workers.POST("/login", worker.Login)
+		workers.POST("/register", worker.Register)
+		workers.GET("/get", worker.Get)
+		workers.PATCH("/update", worker.Update)
+		workers.GET("/check_access", worker.CheckAccess)
+		workers.POST("/take_item", worker.TakeItem)
+		workers.POST("/return_item", worker.ReturnItem)
+		workers.GET("/available_items", worker.AvailableItems)
+		workers.GET("/taken_items", worker.TakenItems)
 	}
+
+	managers := router.Group("/manager")
+	{
+		manager := new(controllers.ManagerController)
+		managers.POST("/login", manager.Login)
+		managers.GET("/list_workers", manager.ListWorkers)
+		managers.DELETE("/remove_worker/:username", manager.RemoveWorker)
+		managers.PATCH("/add_available_items", manager.AddAvailableItems)
+		managers.PATCH("/remove_available_items", manager.RemoveAvailableItems)
+		managers.GET("/list_available_items", manager.ListAvailableItems)
+		managers.GET("/list_taken_items", manager.ListTakenItems)
+
+	}
+
+	admins := router.Group("/admin")
+	{
+		admin := new(controllers.AdminController)
+		admins.POST("/register_manager", admin.RegisterManager)
+	}
+
 	// TODO: consider using decorators for access management
 
 	//game := router.Group("/inventory")

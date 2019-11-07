@@ -11,11 +11,20 @@ type ManagerController struct {
 	ControllerBase
 }
 
+// POST /manager/login
+// {}
+// 200: {"token":"1234567"}
+// 400,403: {"message":"123"}
 func (a *ManagerController) Login(c *gin.Context) {
-	// same as user login
+	worker := WorkerController{}
+	worker.Login(c) // token mechanism is abstracted for all user types
 }
 
-// TODO: fix gorm requests
+// GET /manager/list_workers
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"users":[{"username":""...}]}
+// 401,500: {"message":"123"}
 func (a *ManagerController) ListWorkers(c *gin.Context) {
 	if _, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager)); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
@@ -27,15 +36,34 @@ func (a *ManagerController) ListWorkers(c *gin.Context) {
 	resp := database.DB.Model(&models.User{}).Find(&users)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
+		return
 	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"users": users})
 }
 
-func (a *WorkerController) GetWorker(c *gin.Context) {
+// DEPRECATED
+// /manager/get_worker/{username}
+//func (a *WorkerController) GetWorker(c *gin.Context) {
+//	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+//	if err != nil {
+//		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+//		return
+//	}
+//
+//	user := models.User{Username: c.Param("username")}
+//	if database.DB.Model(&models.User{}).Where(&user).First(&user).RecordNotFound() {
+//		a.JsonFail(c, http.StatusNotFound, "user not found")
+//		return
+//	}
+//	a.JsonSuccess(c, http.StatusOK, user.ToMap())
+//}
 
-}
-
-// TODO: fix gorm requests
-func (a *WorkerController) RemoveWorker(c *gin.Context) {
+// DELETE /manager/remove_worker/{username}
+// HEADERS: {Authorization: token}
+// {}
+// 200: {}
+// 400,401,404,500: {"message":"123"}
+func (a *ManagerController) RemoveWorker(c *gin.Context) {
 	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
@@ -60,18 +88,139 @@ func (a *WorkerController) RemoveWorker(c *gin.Context) {
 	a.JsonSuccess(c, http.StatusOK, gin.H{"message": "user deleted successfully"})
 }
 
-func (a *WorkerController) AddAvailableItems(c *gin.Context) {
+// PATCH /manager/add_available_items
+// HEADERS: {Authorization: token}
+// {"itemtype":"123","count":77}
+// 200: {}
+// 400,401,500: {"message":"123"}
+func (a *ManagerController) AddAvailableItems(c *gin.Context) {
+	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var item models.AvailableItem
+	if err := c.Bind(&item); err == nil {
+		tx := database.DB.Begin()
+		searchItem := models.AvailableItem{ItemType: item.ItemType}
+		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
+		if res.RecordNotFound() {
+			tx.Model(&models.AvailableItem{}).Create(item)
+		} else if res.Error != nil {
+			tx.Rollback()
+			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+			return
+		} else {
+			searchItem.Count += item.Count
+			res = tx.Model(&models.AvailableItem{}).Save(&searchItem)
+			if res.Error != nil {
+				tx.Rollback()
+				a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+				return
+			}
+		}
+		if err := tx.Commit().Error; err != nil {
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		a.JsonSuccess(c, http.StatusOK, gin.H{})
+	} else {
+		a.JsonFail(c, http.StatusBadRequest, err.Error())
+	}
 
 }
 
-func (a *WorkerController) RemoveAvailableItems(c *gin.Context) {
+// PATCH /manager/remove_available_items
+// HEADERS: {Authorization: token}
+// {"itemtype":"123","count":77}
+// 200: {}
+// 400,401,500: {"message":"123"}
+func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
+	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
 
+	var item models.AvailableItem
+	if err := c.Bind(&item); err == nil {
+		tx := database.DB.Begin()
+		searchItem := models.AvailableItem{ItemType: item.ItemType}
+		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
+		if res.RecordNotFound() {
+			tx.Model(&models.AvailableItem{}).Create(item)
+		} else if res.Error != nil {
+			tx.Rollback()
+			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+			return
+		} else {
+			if searchItem.Count < item.Count {
+				a.JsonFail(c, http.StatusBadRequest, "not enough items for deletion")
+				return
+			}
+			searchItem.Count -= item.Count
+			res = tx.Model(&models.AvailableItem{}).Save(&searchItem)
+			if res.Error != nil {
+				tx.Rollback()
+				a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+				return
+			}
+		}
+		if err := tx.Commit().Error; err != nil {
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		a.JsonSuccess(c, http.StatusOK, gin.H{})
+	} else {
+		a.JsonFail(c, http.StatusBadRequest, err.Error())
+	}
 }
 
-func (a *WorkerController) GetAvailableItems(c *gin.Context) {
+// GET /manager/list_available_items
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"items":[{"itemtype":"123","count":77}]}
+// 401,500: {"message":"123"}
+func (a *ManagerController) ListAvailableItems(c *gin.Context) {
+	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
 
+	var availableItems []models.AvailableItem
+
+	// TODO: test for no items
+	var users []models.AvailableItem
+	resp := database.DB.Model(&models.AvailableItem{}).Order("username").Find(&availableItems)
+	if err := resp.Error; err != nil {
+		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
+		return
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"users": users})
+	// list available items in form {"itemtype1":{"count":123}, ...}
 }
 
-func (a *WorkerController) ListTakenItems(c *gin.Context) {
+// GET /manager/list_taken_items
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
+// 401,500: {"message":"123"}
+func (a *ManagerController) ListTakenItems(c *gin.Context) {
+	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
 
+	// TODO: test for no items
+	var takenItems []models.TakenItem
+	resp := database.DB.Model(&models.TakenItem{}).Order("username").Find(&takenItems)
+	if err := resp.Error; err != nil {
+		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
+		return
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"users": takenItems})
+	// list taken items in form {"itemtype1":{"takenby":"username1", }}
 }

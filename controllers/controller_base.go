@@ -9,7 +9,6 @@ type ControllerBase struct {
 
 func (basic *ControllerBase) JsonSuccess(c *gin.Context, status int, h gin.H) {
 	c.JSON(status, h)
-	return
 }
 
 func (basic *ControllerBase) JsonFail(c *gin.Context, status int, message string) {
