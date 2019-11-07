@@ -5,120 +5,142 @@
 
 ### Build and Run:
 
-1 Configure database link (mysql) /config/config.yaml:
+#### 1 Configure database link (mysql) /config/config.yaml:
 
-2 Get dependencies
+#### 2 Get dependencies
 
 ```shell script
 go get -u github.com/go-sql-driver/mysql
 go get -u github.com/jinzhu/gorm
 go get -u github.com/gin-gonic/gin
 go get -u github.com/gin-contrib/cors
+go get -u github.com/gin-contrib/static
 
 ```
-3 Get server
+#### 3 Get server
 
 INSIDE $GOPATH/src
 ```shell script
-git clone github.com/dds-project-f19/dds-backend
+git clone https://github.com/dds-project-f19/dds-backend
 ```
 
-4 Build
+#### 4 Build
 
 ```shell script
-go install your/go/path/src/dds-backend
+go install $GOPATH/src/dds-backend
 ```
 
-5 Run
+#### 5 Run
 
-now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
-
-
-### API Descri~~~~ption (to be moved to wiki later):
-TODO:
-* Add auth tokens
-* Decide on auth model
-
-
-
-#### Ping
-> GET /ping
-
-Expected:
-```
-PONG
+Now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
+```shell script
+$ dds-backend --help
+Usage of dds-backend:
+  -dbaddress string
+         (default "127.0.0.1")
+  -dblogin string
+         (default "root")
+  -dbname string
+         (default "ddstest")
+  -dbpassword string
+         (default "ddspassword14882")
+  -dbport string
+         (default "3306")
 ```
 
-#### Register User
-> POST /users/register
 
-Request:
-```json
-{
-	"username": "username",
-	"name": "name",
-    "surname": "surname",
-    "phone": "phone",
-    "address": "address",
-	"password": "password"
-}
-```
-Expected:
-```
-{
-    "message": "User created successfully",
-    "status": "success"
-}
-```
+### API Description (to be moved to wiki later):
 
-#### User Login
-> POST /users/login
+```golang
+// POST /worker/login
+// {"username":"123", "password":"456"}
+// 200: {"token":"1234567"}
+// 400,403: {"message":"123"}
 
-Request:
-```json
-{
-  "username": "username",
-  "password": "password"
-}
-```
+// POST /worker/register
+// {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
+// 201: {"token":"1234567"}
+// 400,409,500: {"message":"123"}
 
-Expected:
-```json
-{
-    "status": "success"
-}
-```
+// GET /worker/get
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"username":"required", "name":"", "surname":"", "phone":"", "address":""}
+// 401,404: {"message":"123"}
 
-#### Get Users list
-> POST /users/list
+// PATCH /worker/update
+// HEADERS: {Authorization: token}
+// {"username":"required", "name":"", "surname":"", "phone":"", "address":""}
+// 200, 201: {}
+// 400,401,404: {"message":"123"}
 
-Request:
-```json
-{
-  "username": "admin",
-  "password": "admin"
-}
-```
+// POST /worker/take_item
+// HEADERS: {Authorization: token}
+// {"itemtype":"123", "slot":"123"}
+// 201: {"message":"request done, blah blah"}
+// 400,401,500: {"message":"123"}
 
-Expected:
-```json
-{
-    "data": [
-        {
-            "id": 1,
-            "created_at": "2019-09-24T20:49:00+03:00",
-            "updated_at": "2019-09-24T20:49:00+03:00",
-            "username": "myusername",
-            "name": "myname"
-        },
-        {
-            "id": 2,
-            "created_at": "2019-09-24T20:55:01+03:00",
-            "updated_at": "2019-09-24T20:56:35+03:00",
-            "username": "myusername2",
-            "name": "myname2"
-        }
-    ],
-    "status": "success"
-}
+// POST /worker/return_item
+// HEADERS: {Authorization: token}
+// {"itemtype":"123", "slot":"123"}
+// 201: {"message":"request done, blah blah"}
+// 400,401,500: {"message":"123"}
+
+// GET /worker/available_items
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"items":[{"itemtype":"123","count":77}]}
+// 401,500: {"message":"123"}
+
+// GET /worker/taken_items
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
+// 401,500: {"message":"123"}
+
+// POST /manager/login
+// {}
+// 200: {"token":"1234567"}
+// 400,403: {"message":"123"}
+
+// GET /manager/list_workers
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"users":[{"username":""...}]}
+// 401,500: {"message":"123"}
+
+// DELETE /manager/remove_worker/{username}
+// HEADERS: {Authorization: token}
+// {}
+// 200: {}
+// 400,401,404,500: {"message":"123"}
+
+// PATCH /manager/add_available_items
+// HEADERS: {Authorization: token}
+// {"itemtype":"123","count":77}
+// 200: {}
+// 400,401,500: {"message":"123"}
+
+// PATCH /manager/remove_available_items
+// HEADERS: {Authorization: token}
+// {"itemtype":"123","count":77}
+// 200: {}
+// 400,401,500: {"message":"123"}
+
+// GET /manager/list_available_items
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"items":[{"itemtype":"123","count":77}]}
+// 401,500: {"message":"123"}
+
+// GET /manager/list_taken_items
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
+// 401,500: {"message":"123"}
+
+// POST /admin/register_manager
+// {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
+// 201: {}
+// 400,401,409,500: {"message":"123"}
 ```

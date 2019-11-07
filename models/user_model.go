@@ -1,11 +1,66 @@
 package models
 
+import (
+	"github.com/jinzhu/gorm"
+	"regexp"
+	"sync"
+)
+
 type User struct {
-	ModelBase
-	Username string `gorm:"type:varchar(30);unique_index" json:"username,omitempty"`
-	Name     string `gorm:"type:varchar(30);not null;default:''" json:"name,omitempty"`
-	Surname  string `gorm:"type:varchar(30);not null;default:''" json:"surname,omitempty"`
-	Phone    string `gorm:"type:varchar(30);not null;default:''" json:"phone,omitempty"`
-	Address  string `gorm:"type:varchar(30);not null;default:''" json:"address,omitempty"`
-	Password string `gorm:"type:varchar(64);not null;default:''" json:"password,omitempty"`
+	gorm.Model
+	Username string `gorm:"unique_index;not null"`
+	Password string `gorm:"not null"`
+	Name     string
+	Surname  string
+	Phone    string `gorm:"unique"`
+	Address  string
+	Claim    int `gorm:"not null;default:1"`
+}
+
+func (u *User) ToMap() map[string]interface{} {
+	result := make(map[string]interface{})
+	result["username"] = u.Username
+	result["name"] = u.Name
+	result["surname"] = u.Surname
+	result["phone"] = u.Phone
+	result["address"] = u.Address
+	return result
+}
+
+type regexChecker struct {
+	usernamePattern *regexp.Regexp
+	phonePattern    *regexp.Regexp
+	emailPattern    *regexp.Regexp
+}
+
+var regexCheckerInstance *regexChecker
+var once sync.Once
+
+func regexCheckerGetInstance() *regexChecker {
+	once.Do(func() {
+		regexCheckerInstance = &regexChecker{}
+		var err error
+		regexCheckerInstance.usernamePattern, err = regexp.Compile(`[a-z0-9_]{3,15}`)
+		if err != nil {
+			panic(err)
+		}
+		regexCheckerInstance.phonePattern, err = regexp.Compile(`(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}`)
+		if err != nil {
+			panic(err)
+		}
+		regexCheckerInstance.emailPattern, err = regexp.Compile(`[a-zA-Z0-9.!#$%&'*+/=?^_{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*`)
+		if err != nil { // FIXME: add missing ` in regex
+			panic(err)
+		}
+	})
+	return regexCheckerInstance
+}
+
+func (u *User) IsValid() (bool, string) {
+	if !regexCheckerGetInstance().usernamePattern.MatchString(u.Username) {
+		return false, "username is not valid"
+	}
+	// TODO: add other checks and output message in compond form
+	// FIXME: regex not working correctly !!!
+	return true, ""
 }
