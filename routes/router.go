@@ -22,8 +22,8 @@ func InitRouter() *gin.Engine {
 		workers.GET("/check_access", worker.CheckAccess)
 		workers.POST("/take_item", worker.TakeItem)
 		workers.POST("/return_item", worker.ReturnItem)
-		workers.GET("/available_items", worker.AvailableItems)
-		workers.GET("/taken_items", worker.TakenItems)
+		workers.GET("/list_available_items", worker.AvailableItems)
+		workers.GET("/list_taken_items", worker.TakenItems)
 	}
 
 	managers := router.Group("/manager")

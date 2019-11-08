@@ -267,7 +267,7 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 	}
 }
 
-// GET /worker/available_items
+// GET /worker/list_available_items
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"items":[{"itemtype":"123","count":77}]}
@@ -290,7 +290,7 @@ func (a *WorkerController) AvailableItems(c *gin.Context) {
 
 }
 
-// GET /worker/taken_items
+// GET /worker/list_taken_items
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
