@@ -104,7 +104,7 @@ func (a *WorkerController) Get(c *gin.Context) {
 // PATCH /worker/update
 // HEADERS: {Authorization: token}
 // {"username":"required", "name":"", "surname":"", "phone":"", "address":""}
-// 200, 201: {}
+// 200: {}
 // 400,401,404: {"message":"123"}
 // TODO: fix gorm requests and decide on update semantics
 func (a *WorkerController) Update(c *gin.Context) {
@@ -129,7 +129,7 @@ func (a *WorkerController) Update(c *gin.Context) {
 			return
 		}
 
-		a.JsonSuccess(c, http.StatusCreated, gin.H{})
+		a.JsonSuccess(c, http.StatusOK, gin.H{})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}

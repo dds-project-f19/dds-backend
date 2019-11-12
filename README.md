@@ -71,7 +71,7 @@ Usage of dds-backend:
 // PATCH /worker/update
 // HEADERS: {Authorization: token}
 // {"username":"required", "name":"", "surname":"", "phone":"", "address":""}
-// 200, 201: {}
+// 200: {}
 // 400,401,404: {"message":"123"}
 
 // POST /worker/take_item
