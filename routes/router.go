@@ -3,6 +3,7 @@ package routes
 import (
 	"dds-backend/controllers"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,7 +13,8 @@ func InitRouter() *gin.Engine {
 	// setup CORS policy
 	router.Use(cors.Default())
 
-	workers := router.Group("/worker")
+	apiGroup := router.Group("/api")
+	workers := apiGroup.Group("/worker")
 	{
 		worker := new(controllers.WorkerController)
 		workers.POST("/login", worker.Login)
@@ -26,7 +28,7 @@ func InitRouter() *gin.Engine {
 		workers.GET("/list_taken_items", worker.TakenItems)
 	}
 
-	managers := router.Group("/manager")
+	managers := apiGroup.Group("/manager")
 	{
 		manager := new(controllers.ManagerController)
 		managers.POST("/login", manager.Login)
@@ -39,7 +41,7 @@ func InitRouter() *gin.Engine {
 
 	}
 
-	admins := router.Group("/admin")
+	admins := apiGroup.Group("/admin")
 	{
 		admin := new(controllers.AdminController)
 		admins.POST("/register_manager", admin.RegisterManager)
@@ -57,7 +59,9 @@ func InitRouter() *gin.Engine {
 	//}
 
 	ping := new(controllers.Ping)
-	router.GET("/ping", ping.Ping)
+	apiGroup.GET("/ping", ping.Ping)
+
+	router.Use(static.Serve("/", static.LocalFile("./front/build", true)))
 
 	return router
 
