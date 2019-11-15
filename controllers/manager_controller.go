@@ -11,15 +11,6 @@ type ManagerController struct {
 	ControllerBase
 }
 
-// POST /manager/login
-// {}
-// 200: {"token":"1234567"}
-// 400,403: {"message":"123"}
-func (a *ManagerController) Login(c *gin.Context) {
-	worker := WorkerController{}
-	worker.Login(c) // token mechanism is abstracted for all user types
-}
-
 // GET /manager/list_workers
 // HEADERS: {Authorization: token}
 // {}

@@ -29,7 +29,6 @@ func InitRouter() *gin.Engine {
 	managers := router.Group("/manager")
 	{
 		manager := new(controllers.ManagerController)
-		managers.POST("/login", manager.Login)
 		managers.GET("/list_workers", manager.ListWorkers)
 		managers.DELETE("/remove_worker/:username", manager.RemoveWorker)
 		managers.PATCH("/add_available_items", manager.AddAvailableItems)
