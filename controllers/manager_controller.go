@@ -97,7 +97,7 @@ func (a *ManagerController) AddAvailableItems(c *gin.Context) {
 		searchItem := models.AvailableItem{ItemType: item.ItemType}
 		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
 		if res.RecordNotFound() {
-			tx.Model(&models.AvailableItem{}).Create(item)
+			tx.Model(&models.AvailableItem{}).Create(&item)
 		} else if res.Error != nil {
 			tx.Rollback()
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -140,7 +140,7 @@ func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
 		searchItem := models.AvailableItem{ItemType: item.ItemType}
 		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
 		if res.RecordNotFound() {
-			tx.Model(&models.AvailableItem{}).Create(item)
+			tx.Model(&models.AvailableItem{}).Create(&item)
 		} else if res.Error != nil {
 			tx.Rollback()
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -183,13 +183,16 @@ func (a *ManagerController) ListAvailableItems(c *gin.Context) {
 	var availableItems []models.AvailableItem
 
 	// TODO: test for no items
-	var users []models.AvailableItem
-	resp := database.DB.Model(&models.AvailableItem{}).Order("username").Find(&availableItems)
+	resp := database.DB.Model(&models.AvailableItem{}).Find(&availableItems)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
 	}
-	a.JsonSuccess(c, http.StatusOK, gin.H{"users": users})
+	var toDump []interface{}
+	for _, elem := range availableItems {
+		toDump = append(toDump, elem.ToMap())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 	// list available items in form {"itemtype1":{"count":123}, ...}
 }
 
@@ -207,11 +210,15 @@ func (a *ManagerController) ListTakenItems(c *gin.Context) {
 
 	// TODO: test for no items
 	var takenItems []models.TakenItem
-	resp := database.DB.Model(&models.TakenItem{}).Order("username").Find(&takenItems)
+	resp := database.DB.Model(&models.TakenItem{}).Find(&takenItems)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
 	}
-	a.JsonSuccess(c, http.StatusOK, gin.H{"users": takenItems})
+	var toDump []interface{}
+	for _, elem := range takenItems {
+		toDump = append(toDump, elem.ToMap())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 	// list taken items in form {"itemtype1":{"takenby":"username1", }}
 }

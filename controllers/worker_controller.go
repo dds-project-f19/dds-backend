@@ -188,7 +188,7 @@ func (a *WorkerController) TakeItem(c *gin.Context) {
 			return
 		}
 
-		res = tx.Model(&models.TakenItem{}).Create(taken)
+		res = tx.Model(&models.TakenItem{}).Create(&taken)
 		if res.Error != nil {
 			tx.Rollback()
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -279,14 +279,17 @@ func (a *WorkerController) AvailableItems(c *gin.Context) {
 		return
 	}
 
-	var items []models.TakenItem
-	resp := database.DB.Model(&models.AvailableItem{}).Order("username").Find(&items)
+	var items []models.AvailableItem
+	resp := database.DB.Model(&models.AvailableItem{}).Find(&items)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
 	}
-	// TODO: add processing for processing
-	a.JsonSuccess(c, http.StatusOK, gin.H{"items": items})
+	var toDump []interface{}
+	for _, elem := range items {
+		toDump = append(toDump, elem.ToMap())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 
 }
 
@@ -304,11 +307,14 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 
 	searchItem := models.TakenItem{TakenBy: auth.Username}
 	var items []models.TakenItem
-	resp := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Order("username").Find(&items)
+	resp := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Find(&items)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
 	}
-	a.JsonSuccess(c, http.StatusOK, gin.H{"items": items})
-
+	var toDump []interface{}
+	for _, elem := range items {
+		toDump = append(toDump, elem.ToMap())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 }
