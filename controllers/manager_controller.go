@@ -190,7 +190,9 @@ func (a *ManagerController) ListAvailableItems(c *gin.Context) {
 	}
 	var toDump []interface{}
 	for _, elem := range availableItems {
-		toDump = append(toDump, elem.ToMap())
+		if elem.Count > 0 {
+			toDump = append(toDump, elem.ToMap())
+		}
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 	// list available items in form {"itemtype1":{"count":123}, ...}

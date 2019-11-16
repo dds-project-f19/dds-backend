@@ -287,7 +287,9 @@ func (a *WorkerController) AvailableItems(c *gin.Context) {
 	}
 	var toDump []interface{}
 	for _, elem := range items {
-		toDump = append(toDump, elem.ToMap())
+		if elem.Count > 0 {
+			toDump = append(toDump, elem.ToMap())
+		}
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 
