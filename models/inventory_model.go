@@ -17,6 +17,13 @@ type TakenItem struct {
 	AssignedToSlot string `gorm:"not null"`
 }
 
+type AssignedItem struct {
+	gorm.Model
+	AssignedTo string `gorm:"not null"`
+	ItemType   string `gorm:"not null"`
+	Count      int    `gorm:"not null"`
+}
+
 // not done via reflection on purpose
 // could be done via general function with generics, not yet present in go
 func (a *AvailableItem) ToMap() map[string]interface{} {

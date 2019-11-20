@@ -40,7 +40,7 @@ func regexCheckerGetInstance() *regexChecker {
 	once.Do(func() {
 		regexCheckerInstance = &regexChecker{}
 		var err error
-		regexCheckerInstance.usernamePattern, err = regexp.Compile(`[a-z0-9_]{3,15}`)
+		regexCheckerInstance.usernamePattern, err = regexp.Compile(`[a-zA-Z0-9_]{3,15}`)
 		if err != nil {
 			panic(err)
 		}
@@ -58,9 +58,9 @@ func regexCheckerGetInstance() *regexChecker {
 
 func (u *User) IsValid() (bool, string) {
 	if !regexCheckerGetInstance().usernamePattern.MatchString(u.Username) {
-		return false, "username is not valid"
+		return false, "username must consist of letters, numbers or underscores of length 3-15"
 	}
-	// TODO: add other checks and output message in compond form
+	// TODO: add other checks and output message in compound form
 	// FIXME: regex not working correctly !!!
 	return true, ""
 }

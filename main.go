@@ -21,7 +21,6 @@ func main() {
 
 	controllers.InitializeDefaultUsers() // create user `admin`
 
-	go routes.InitFrontendRouter().Run(":80") // run frontend server
 	router := routes.InitRouter()
 	router.Run(generalConfig.Address) // run backend router
 }

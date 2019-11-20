@@ -104,7 +104,7 @@ func (a *WorkerController) Get(c *gin.Context) {
 // PATCH /worker/update
 // HEADERS: {Authorization: token}
 // {"username":"required", "name":"", "surname":"", "phone":"", "address":""}
-// 200, 201: {}
+// 200: {}
 // 400,401,404: {"message":"123"}
 // TODO: fix gorm requests and decide on update semantics
 func (a *WorkerController) Update(c *gin.Context) {
@@ -129,7 +129,7 @@ func (a *WorkerController) Update(c *gin.Context) {
 			return
 		}
 
-		a.JsonSuccess(c, http.StatusCreated, gin.H{})
+		a.JsonSuccess(c, http.StatusOK, gin.H{})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}
@@ -188,7 +188,7 @@ func (a *WorkerController) TakeItem(c *gin.Context) {
 			return
 		}
 
-		res = tx.Model(&models.TakenItem{}).Create(taken)
+		res = tx.Model(&models.TakenItem{}).Create(&taken)
 		if res.Error != nil {
 			tx.Rollback()
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -267,7 +267,7 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 	}
 }
 
-// GET /worker/available_items
+// GET /worker/list_available_items
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"items":[{"itemtype":"123","count":77}]}
@@ -279,18 +279,23 @@ func (a *WorkerController) AvailableItems(c *gin.Context) {
 		return
 	}
 
-	var items []models.TakenItem
-	resp := database.DB.Model(&models.AvailableItem{}).Order("username").Find(&items)
+	var items []models.AvailableItem
+	resp := database.DB.Model(&models.AvailableItem{}).Find(&items)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
 	}
-	// TODO: add processing for processing
-	a.JsonSuccess(c, http.StatusOK, gin.H{"items": items})
+	var toDump []interface{}
+	for _, elem := range items {
+		if elem.Count > 0 {
+			toDump = append(toDump, elem.ToMap())
+		}
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 
 }
 
-// GET /worker/taken_items
+// GET /worker/list_taken_items
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
@@ -304,11 +309,14 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 
 	searchItem := models.TakenItem{TakenBy: auth.Username}
 	var items []models.TakenItem
-	resp := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Order("username").Find(&items)
+	resp := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Find(&items)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
 	}
-	a.JsonSuccess(c, http.StatusOK, gin.H{"items": items})
-
+	var toDump []interface{}
+	for _, elem := range items {
+		toDump = append(toDump, elem.ToMap())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 }

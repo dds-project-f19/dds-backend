@@ -71,7 +71,7 @@ Usage of dds-backend:
 // PATCH /worker/update
 // HEADERS: {Authorization: token}
 // {"username":"required", "name":"", "surname":"", "phone":"", "address":""}
-// 200, 201: {}
+// 200: {}
 // 400,401,404: {"message":"123"}
 
 // POST /worker/take_item
@@ -86,13 +86,13 @@ Usage of dds-backend:
 // 201: {"message":"request done, blah blah"}
 // 400,401,500: {"message":"123"}
 
-// GET /worker/available_items
+// GET /worker/list_available_items
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"items":[{"itemtype":"123","count":77}]}
 // 401,500: {"message":"123"}
 
-// GET /worker/taken_items
+// GET /worker/list_taken_items
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
