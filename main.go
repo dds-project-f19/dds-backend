@@ -5,6 +5,7 @@ import (
 	"dds-backend/controllers"
 	"dds-backend/database"
 	"dds-backend/routes"
+	telegram_bot "dds-backend/telegram-bot"
 	"fmt"
 )
 
@@ -20,6 +21,8 @@ func main() {
 	defer db.Close()
 
 	controllers.InitializeDefaultUsers() // create user `admin`
+
+	go telegram_bot.LaunchBot()
 
 	router := routes.InitRouter()
 	router.Run(generalConfig.Address) // run backend router

@@ -17,20 +17,22 @@ go get -u github.com/gin-contrib/cors
 go get -u github.com/gin-contrib/static
 
 ```
-#### 3 Get server
+#### 3 Setup Environment Variables
+**DDS_TELEGRAM_BOT_APIKEY** - api key for telegram bot
+#### 4 Get server
 
 INSIDE $GOPATH/src
 ```shell script
 git clone https://github.com/dds-project-f19/dds-backend
 ```
 
-#### 4 Build
+#### 5 Build
 
 ```shell script
 go install $GOPATH/src/dds-backend
 ```
 
-#### 5 Run
+#### 6 Run
 
 Now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
 ```shell script
@@ -97,11 +99,6 @@ Usage of dds-backend:
 // {}
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
 // 401,500: {"message":"123"}
-
-// POST /manager/login
-// {}
-// 200: {"token":"1234567"}
-// 400,403: {"message":"123"}
 
 // GET /manager/list_workers
 // HEADERS: {Authorization: token}

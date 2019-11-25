@@ -49,7 +49,7 @@ func InitRouter() *gin.Engine {
 	}
 
 	// TODO: consider using decorators for access management
-	// TODO: add claim checking when manager can delete another managerЦ
+	// TODO: add claim checking when manager can delete another manager
 
 	ping := new(controllers.Ping)
 	{
