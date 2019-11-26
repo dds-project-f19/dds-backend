@@ -12,25 +12,80 @@ type ManagerController struct {
 	ControllerBase
 }
 
+// POST /manager/register_worker
+// {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
+// 201: {"token":"1234567"}
+// 400,409,500: {"message":"123"}
+func (a *ManagerController) RegisterWorker(c *gin.Context) {
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var newUser models.User
+	if err := c.Bind(&newUser); err == nil {
+		if valid, msg := newUser.IsValid(); !valid {
+			a.JsonFail(c, http.StatusBadRequest, msg)
+			return
+		}
+		newUser.Claim = common.Worker
+		newUser.GameType = auth.GameType
+		tx := database.DB.Begin()
+		existingUser := models.User{Username: newUser.Username}
+		res := tx.Model(&models.User{}).Where(&existingUser).First(&existingUser)
+		if res.RecordNotFound() {
+			newUser.Password = common.Hash(newUser.Password)
+			err = tx.Create(&newUser).Error
+			if err != nil {
+				tx.Rollback()
+				a.JsonFail(c, http.StatusBadRequest, err.Error())
+				return
+			}
+		} else if res.Error != nil {
+			tx.Rollback()
+			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+			return
+		} else {
+			tx.Rollback()
+			a.JsonFail(c, http.StatusConflict, "user already exists")
+			return
+		}
+		if err := tx.Commit().Error; err != nil {
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		a.JsonSuccess(c, http.StatusCreated, gin.H{"message": "user created successfully"})
+	} else {
+		a.JsonFail(c, http.StatusBadRequest, err.Error())
+	}
+}
+
 // GET /manager/list_workers
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"users":[{"username":""...}]}
 // 401,500: {"message":"123"}
 func (a *ManagerController) ListWorkers(c *gin.Context) {
-	if _, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager)); err != nil {
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	// TODO: test for no users
+	searchItem := models.User{GameType: auth.GameType}
 	var users []models.User
-	resp := database.DB.Model(&models.User{}).Find(&users)
+	resp := database.DB.Model(&models.User{}).Where(&searchItem).Find(&users)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
 	}
-	a.JsonSuccess(c, http.StatusOK, gin.H{"users": users})
+	var toDump []interface{}
+	for _, elem := range users {
+		toDump = append(toDump, elem.ToMap())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"users": toDump})
 }
 
 // DEPRECATED
@@ -87,7 +142,7 @@ func (a *ManagerController) RemoveWorker(c *gin.Context) {
 // 200: {}
 // 400,401,500: {"message":"123"}
 func (a *ManagerController) AddAvailableItems(c *gin.Context) {
-	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -96,10 +151,18 @@ func (a *ManagerController) AddAvailableItems(c *gin.Context) {
 	var item models.AvailableItem
 	if err := c.Bind(&item); err == nil {
 		tx := database.DB.Begin()
-		searchItem := models.AvailableItem{ItemType: item.ItemType}
+
+		searchItem := models.AvailableItem{GameType: auth.GameType}
+		item.GameType = auth.GameType
+
 		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
 		if res.RecordNotFound() {
-			tx.Model(&models.AvailableItem{}).Create(&item)
+			res := tx.Model(&models.AvailableItem{}).Create(&item)
+			if res.Error != nil {
+				tx.Rollback()
+				a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+				return
+			}
 		} else if res.Error != nil {
 			tx.Rollback()
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -130,7 +193,7 @@ func (a *ManagerController) AddAvailableItems(c *gin.Context) {
 // 200: {}
 // 400,401,500: {"message":"123"}
 func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
-	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -139,10 +202,17 @@ func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
 	var item models.AvailableItem
 	if err := c.Bind(&item); err == nil {
 		tx := database.DB.Begin()
-		searchItem := models.AvailableItem{ItemType: item.ItemType}
+
+		searchItem := models.AvailableItem{ItemType: item.ItemType, GameType: auth.GameType}
+		item.GameType = auth.GameType
 		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
 		if res.RecordNotFound() {
-			tx.Model(&models.AvailableItem{}).Create(&item)
+			res := tx.Model(&models.AvailableItem{}).Create(&item)
+			if res.Error != nil {
+				tx.Rollback()
+				a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+				return
+			}
 		} else if res.Error != nil {
 			tx.Rollback()
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -176,16 +246,16 @@ func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
 // 200: {"items":[{"itemtype":"123","count":77}]}
 // 401,500: {"message":"123"}
 func (a *ManagerController) ListAvailableItems(c *gin.Context) {
-	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
+	searchItem := models.AvailableItem{GameType: auth.GameType}
 	var availableItems []models.AvailableItem
 
-	// TODO: test for no items
-	resp := database.DB.Model(&models.AvailableItem{}).Find(&availableItems)
+	resp := database.DB.Model(&models.AvailableItem{}).Where(&searchItem).Find(&availableItems)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
@@ -206,15 +276,15 @@ func (a *ManagerController) ListAvailableItems(c *gin.Context) {
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
 // 401,500: {"message":"123"}
 func (a *ManagerController) ListTakenItems(c *gin.Context) {
-	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	// TODO: test for no items
+	searchItem := models.AvailableItem{GameType: auth.GameType}
 	var takenItems []models.TakenItem
-	resp := database.DB.Model(&models.TakenItem{}).Find(&takenItems)
+	resp := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Find(&takenItems)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
@@ -225,4 +295,8 @@ func (a *ManagerController) ListTakenItems(c *gin.Context) {
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
 	// list taken items in form {"itemtype1":{"takenby":"username1", }}
+}
+
+func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
+	// TODO implement
 }

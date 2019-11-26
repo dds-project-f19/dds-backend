@@ -4,83 +4,12 @@ import (
 	"dds-backend/common"
 	"dds-backend/database"
 	"dds-backend/models"
-	"dds-backend/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type WorkerController struct {
 	ControllerBase
-}
-
-// POST /worker/login
-// {"username":"123", "password":"456"}
-// 200: {"token":"1234567"}
-// 400,403: {"message":"123"}
-func (a *WorkerController) Login(c *gin.Context) {
-	type RequestBody struct {
-		Username string `binding:"required"`
-		Password string `binding:"required"`
-	}
-	var request RequestBody
-
-	if err := c.ShouldBind(&request); err == nil {
-		token, err := common.Authorize(request.Username, common.Hash(request.Password))
-		if err != nil {
-			a.JsonFail(c, http.StatusForbidden, err.Error())
-			return
-		}
-		a.JsonSuccess(c, http.StatusOK, gin.H{"token": token})
-	} else {
-		a.JsonFail(c, http.StatusBadRequest, err.Error())
-	}
-}
-
-// POST /worker/register
-// {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
-// 201: {"token":"1234567"}
-// 400,409,500: {"message":"123"}
-func (a *WorkerController) Register(c *gin.Context) {
-	var newUser models.User
-	if err := c.Bind(&newUser); err == nil {
-		if valid, msg := newUser.IsValid(); !valid {
-			a.JsonFail(c, http.StatusBadRequest, msg)
-			return
-		}
-		newUser.Claim = common.Worker
-		tx := database.DB.Begin()
-		existingUser := models.User{Username: newUser.Username}
-		res := tx.Model(&models.User{}).Where(&existingUser).First(&existingUser)
-		if res.RecordNotFound() {
-			newUser.Password = common.Hash(newUser.Password)
-			err = tx.Create(&newUser).Error
-			if err != nil {
-				tx.Rollback()
-				a.JsonFail(c, http.StatusBadRequest, err.Error())
-				return
-			}
-		} else if res.Error != nil {
-			tx.Rollback()
-			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
-			return
-		} else {
-			tx.Rollback()
-			a.JsonFail(c, http.StatusConflict, "user already exists")
-			return
-		}
-		if err := tx.Commit().Error; err != nil {
-			a.JsonFail(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		token, err := common.Authorize(newUser.Username, newUser.Password) // note password is already hashed
-		if err != nil {
-			a.JsonFail(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		a.JsonSuccess(c, http.StatusCreated, gin.H{"token": token, "message": "user created successfully"})
-	} else {
-		a.JsonFail(c, http.StatusBadRequest, err.Error())
-	}
 }
 
 // GET /worker/get
@@ -167,6 +96,7 @@ func (a *WorkerController) TakeItem(c *gin.Context) {
 
 	if err := c.Bind(&request); err == nil {
 		available.ItemType = request.ItemType
+		available.GameType = auth.GameType
 
 		tx := database.DB.Begin()
 		res := tx.Model(&models.AvailableItem{}).Where(&available).First(&available)
@@ -177,6 +107,7 @@ func (a *WorkerController) TakeItem(c *gin.Context) {
 		taken.ItemType = available.ItemType
 		taken.TakenBy = auth.Username
 		taken.AssignedToSlot = request.Slot
+		taken.GameType = auth.GameType
 
 		if available.Count <= 0 {
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -231,6 +162,7 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 		taken.ItemType = request.ItemType
 		taken.AssignedToSlot = request.Slot
 		taken.TakenBy = auth.Username
+		taken.GameType = auth.GameType
 
 		tx := database.DB.Begin()
 		res := tx.Model(&models.TakenItem{}).Where(&taken).First(&taken)
@@ -239,6 +171,7 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 			return
 		}
 		available.ItemType = request.ItemType
+		available.GameType = auth.GameType
 		res = tx.Model(&models.AvailableItem{}).Where(&available).First(&available)
 		if res.Error != nil {
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
@@ -275,14 +208,15 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 // 200: {"items":[{"itemtype":"123","count":77}]}
 // 401,500: {"message":"123"}
 func (a *WorkerController) AvailableItems(c *gin.Context) {
-	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Worker))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Worker))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
+	searchItem := models.AvailableItem{GameType: auth.GameType}
 	var items []models.AvailableItem
-	resp := database.DB.Model(&models.AvailableItem{}).Find(&items)
+	resp := database.DB.Model(&models.AvailableItem{}).Where(&searchItem).Find(&items)
 	if err := resp.Error; err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, resp.Error.Error())
 		return
@@ -294,7 +228,6 @@ func (a *WorkerController) AvailableItems(c *gin.Context) {
 		}
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
-
 }
 
 // GET /worker/list_taken_items
@@ -309,7 +242,7 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 		return
 	}
 
-	searchItem := models.TakenItem{TakenBy: auth.Username}
+	searchItem := models.TakenItem{TakenBy: auth.Username, GameType: auth.GameType}
 	var items []models.TakenItem
 	resp := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Find(&items)
 	if err := resp.Error; err != nil {
@@ -321,22 +254,4 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 		toDump = append(toDump, elem.ToMap())
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
-}
-
-// GET /worker/telegram_join_link
-// HEADERS: {Authorization: token}
-// {}
-// 200: {"link":"t.me/bot_link/start=regkey123"}
-// 401, 500: {"message":"123"}
-func (a *WorkerController) GenerateTelegramJoinLink(c *gin.Context) {
-	auth, err := common.CheckAuthConditional(c)
-	if err != nil {
-		a.JsonFail(c, http.StatusUnauthorized, err.Error())
-		return
-	}
-	link, err := services.GetChatRegistrationLink(auth.Username)
-	if err != nil {
-		a.JsonFail(c, http.StatusInternalServerError, err.Error())
-	}
-	a.JsonSuccess(c, http.StatusOK, gin.H{"link": link})
 }

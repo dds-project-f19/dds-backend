@@ -59,3 +59,7 @@ func (a *AdminController) RegisterManager(c *gin.Context) {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}
 }
+
+func (a *AdminController) SetManagerSchedule(c *gin.Context) {
+	// TODO implement
+}
