@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"dds-backend/common"
 	"dds-backend/database"
 	"dds-backend/models"
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,7 @@ type ManagerController struct {
 // 200: {"users":[{"username":""...}]}
 // 401,500: {"message":"123"}
 func (a *ManagerController) ListWorkers(c *gin.Context) {
-	if _, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager)); err != nil {
+	if _, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager)); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -55,7 +56,7 @@ func (a *ManagerController) ListWorkers(c *gin.Context) {
 // 200: {}
 // 400,401,404,500: {"message":"123"}
 func (a *ManagerController) RemoveWorker(c *gin.Context) {
-	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -68,8 +69,9 @@ func (a *ManagerController) RemoveWorker(c *gin.Context) {
 		a.JsonFail(c, http.StatusNotFound, "worker not found")
 		return
 	} else if res.Error != nil {
-		// TODO: add logs and close error interface to users
+		// TODO: add logs and don't send error messages to users
 		a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+		return
 	}
 
 	if err := database.DB.Model(&models.User{}).Delete(&user).Error; err != nil {
@@ -85,7 +87,7 @@ func (a *ManagerController) RemoveWorker(c *gin.Context) {
 // 200: {}
 // 400,401,500: {"message":"123"}
 func (a *ManagerController) AddAvailableItems(c *gin.Context) {
-	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -128,7 +130,7 @@ func (a *ManagerController) AddAvailableItems(c *gin.Context) {
 // 200: {}
 // 400,401,500: {"message":"123"}
 func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
-	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -174,7 +176,7 @@ func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
 // 200: {"items":[{"itemtype":"123","count":77}]}
 // 401,500: {"message":"123"}
 func (a *ManagerController) ListAvailableItems(c *gin.Context) {
-	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -204,7 +206,7 @@ func (a *ManagerController) ListAvailableItems(c *gin.Context) {
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
 // 401,500: {"message":"123"}
 func (a *ManagerController) ListTakenItems(c *gin.Context) {
-	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Manager))
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return

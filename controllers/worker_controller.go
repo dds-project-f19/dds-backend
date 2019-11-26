@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"dds-backend/common"
 	"dds-backend/database"
 	"dds-backend/models"
+	"dds-backend/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -23,7 +25,7 @@ func (a *WorkerController) Login(c *gin.Context) {
 	var request RequestBody
 
 	if err := c.ShouldBind(&request); err == nil {
-		token, err := Authorize(request.Username, Hash(request.Password))
+		token, err := common.Authorize(request.Username, common.Hash(request.Password))
 		if err != nil {
 			a.JsonFail(c, http.StatusForbidden, err.Error())
 			return
@@ -45,12 +47,12 @@ func (a *WorkerController) Register(c *gin.Context) {
 			a.JsonFail(c, http.StatusBadRequest, msg)
 			return
 		}
-		newUser.Claim = Worker
+		newUser.Claim = common.Worker
 		tx := database.DB.Begin()
 		existingUser := models.User{Username: newUser.Username}
 		res := tx.Model(&models.User{}).Where(&existingUser).First(&existingUser)
 		if res.RecordNotFound() {
-			newUser.Password = Hash(newUser.Password)
+			newUser.Password = common.Hash(newUser.Password)
 			err = tx.Create(&newUser).Error
 			if err != nil {
 				tx.Rollback()
@@ -70,7 +72,7 @@ func (a *WorkerController) Register(c *gin.Context) {
 			a.JsonFail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-		token, err := Authorize(newUser.Username, newUser.Password) // note password is already hashed
+		token, err := common.Authorize(newUser.Username, newUser.Password) // note password is already hashed
 		if err != nil {
 			a.JsonFail(c, http.StatusInternalServerError, err.Error())
 			return
@@ -87,7 +89,7 @@ func (a *WorkerController) Register(c *gin.Context) {
 // 200: {"username":"required", "name":"", "surname":"", "phone":"", "address":""}
 // 401,404: {"message":"123"}
 func (a *WorkerController) Get(c *gin.Context) {
-	auth, err := CheckAuthConditional(c)
+	auth, err := common.CheckAuthConditional(c)
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -108,7 +110,7 @@ func (a *WorkerController) Get(c *gin.Context) {
 // 400,401,404: {"message":"123"}
 // TODO: fix gorm requests and decide on update semantics
 func (a *WorkerController) Update(c *gin.Context) {
-	auth, err := CheckAuthConditional(c)
+	auth, err := common.CheckAuthConditional(c)
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -136,7 +138,7 @@ func (a *WorkerController) Update(c *gin.Context) {
 }
 
 func (a *WorkerController) CheckAccess(c *gin.Context) {
-	if _, err := CheckAuthConditional(c); err != nil {
+	if _, err := common.CheckAuthConditional(c); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 	} else {
 		a.JsonSuccess(c, http.StatusOK, gin.H{"message": "you have access to perform this call"})
@@ -149,7 +151,7 @@ func (a *WorkerController) CheckAccess(c *gin.Context) {
 // 201: {"message":"request done, blah blah"}
 // 400,401,500: {"message":"123"}
 func (a *WorkerController) TakeItem(c *gin.Context) {
-	auth, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Worker))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Worker))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -211,7 +213,7 @@ func (a *WorkerController) TakeItem(c *gin.Context) {
 // 201: {"message":"request done, blah blah"}
 // 400,401,500: {"message":"123"}
 func (a *WorkerController) ReturnItem(c *gin.Context) {
-	auth, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Worker))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Worker))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -273,7 +275,7 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 // 200: {"items":[{"itemtype":"123","count":77}]}
 // 401,500: {"message":"123"}
 func (a *WorkerController) AvailableItems(c *gin.Context) {
-	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Worker))
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Worker))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -301,7 +303,7 @@ func (a *WorkerController) AvailableItems(c *gin.Context) {
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
 // 401,500: {"message":"123"}
 func (a *WorkerController) TakenItems(c *gin.Context) {
-	auth, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Worker))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Worker))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -319,4 +321,22 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 		toDump = append(toDump, elem.ToMap())
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
+}
+
+// GET /worker/telegram_join_link
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"link":"t.me/bot_link/start=regkey123"}
+// 401, 500: {"message":"123"}
+func (a *WorkerController) GenerateTelegramJoinLink(c *gin.Context) {
+	auth, err := common.CheckAuthConditional(c)
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	link, err := services.GetChatRegistrationLink(auth.Username)
+	if err != nil {
+		a.JsonFail(c, http.StatusInternalServerError, err.Error())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"link": link})
 }

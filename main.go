@@ -5,7 +5,7 @@ import (
 	"dds-backend/controllers"
 	"dds-backend/database"
 	"dds-backend/routes"
-	telegram_bot "dds-backend/telegram-bot"
+	telegram_bot "dds-backend/services"
 	"fmt"
 )
 

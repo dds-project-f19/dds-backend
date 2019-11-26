@@ -15,6 +15,7 @@ go get -u github.com/jinzhu/gorm
 go get -u github.com/gin-gonic/gin
 go get -u github.com/gin-contrib/cors
 go get -u github.com/gin-contrib/static
+go get -u github.com/go-telegram-bot-api/telegram-bot-api
 
 ```
 #### 3 Setup Environment Variables
@@ -140,4 +141,10 @@ Usage of dds-backend:
 // {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
 // 201: {}
 // 400,401,409,500: {"message":"123"}
+
+// GET /worker/telegram_join_link
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"link":"t.me/bot_link/start=regkey123"}
+// 401, 500: {"message":"123"}
 ```

@@ -28,6 +28,7 @@ func InitRouter() *gin.Engine {
 		workers.POST("/return_item", worker.ReturnItem)
 		workers.GET("/list_available_items", worker.AvailableItems)
 		workers.GET("/list_taken_items", worker.TakenItems)
+		workers.GET("/telegram_join_link", worker.GenerateTelegramJoinLink)
 	}
 
 	managers := apiGroup.Group("/manager")
