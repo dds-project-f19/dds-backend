@@ -1,10 +1,15 @@
 package routes
 
 import (
+	"dds-backend/config"
 	"dds-backend/controllers"
+	"dds-backend/database"
+	"dds-backend/services"
+	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 func InitRouter() *gin.Engine {
@@ -16,11 +21,18 @@ func InitRouter() *gin.Engine {
 	// TODO: setup logger
 
 	apiGroup := router.Group("/api")
+
+	commons := apiGroup.Group("/common")
+	{
+		common := new(controllers.CommonController)
+		commons.POST("/login", common.Login)
+		commons.GET("/telegram_join_link", common.GenerateTelegramJoinLink)
+
+	}
+
 	workers := apiGroup.Group("/worker")
 	{
 		worker := new(controllers.WorkerController)
-		workers.POST("/login", worker.Login)
-		workers.POST("/register", worker.Register)
 		workers.GET("/get", worker.Get)
 		workers.PATCH("/update", worker.Update)
 		workers.GET("/check_access", worker.CheckAccess)
@@ -33,6 +45,7 @@ func InitRouter() *gin.Engine {
 	managers := apiGroup.Group("/manager")
 	{
 		manager := new(controllers.ManagerController)
+		managers.POST("/register_worker", manager.RegisterWorker)
 		managers.GET("/list_workers", manager.ListWorkers)
 		managers.DELETE("/remove_worker/:username", manager.RemoveWorker)
 		managers.PATCH("/add_available_items", manager.AddAvailableItems)
@@ -60,4 +73,20 @@ func InitRouter() *gin.Engine {
 
 	return router
 
+}
+
+// Must close database after use
+func MakeServer() (*gin.Engine, config.GeneralConfig, *gorm.DB, error) {
+	currentConfig := config.LoadConfigFromCmdArgs()
+	generalConfig := config.GetDefaultGeneralConfig()
+
+	db, err := database.InitDB(currentConfig, generalConfig)
+	if err != nil {
+		fmt.Println("error opening database: " + err.Error())
+		return nil, generalConfig, db, err
+	}
+	controllers.InitializeDefaultUsers() // create user `admin`
+	go services.LaunchBot()
+
+	return InitRouter(), generalConfig, db, nil
 }
