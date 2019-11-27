@@ -87,6 +87,7 @@ func MakeServer() (*gin.Engine, config.GeneralConfig, *gorm.DB, error) {
 	}
 	controllers.InitializeDefaultUsers() // create user `admin`
 	go services.LaunchBot()
+	go services.LaunchScheduler()
 
 	return InitRouter(), generalConfig, db, nil
 }
