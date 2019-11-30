@@ -14,6 +14,15 @@ func launchService() {
 
 }
 
+func RemoveWorkerTakenItems(username string) error {
+	searchItem := models.TakenItem{TakenBy: username}
+	res := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Delete(&searchItem)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
 type ScheduleNotFoundError struct {
 	error string
 }
@@ -169,8 +178,8 @@ func AddCronRange(c *cron.Cron, schedule models.UserSchedule) (cron.EntryID, cro
 		c.Remove(id1)
 		return 0, 0, err
 	}
-	msgE := fmt.Sprintf("Your workday has finished (%s)", schedule.EndTime)
-	id2, err := c.AddFunc(cstr, func() { ScheduleNotify(msgE, schedule.Username) })
+	msgE := fmt.Sprintf("Your workday has finished (%s). Your taken items were removed.", schedule.EndTime)
+	id2, err := c.AddFunc(cstr, func() { ScheduleNotify(msgE, schedule.Username); RemoveWorkerTakenItems(schedule.Username) })
 	if err != nil {
 		c.Remove(id1)
 		return 0, 0, err
