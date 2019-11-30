@@ -1,8 +1,8 @@
 package models
 
 import (
+	"errors"
 	"github.com/jinzhu/gorm"
-	"time"
 )
 
 type AvailableItem struct {
@@ -20,13 +20,14 @@ type TakenItem struct {
 	GameType       string `gorm:"not null"`
 }
 
-type HistoryItem struct {
-	gorm.Model
-	TakenBy  string    `gorm:"not null"`
-	ItemType string    `gorm:"not null"`
-	UsedTime time.Time `gorm:"not null"`
-	GameType string    `gorm:"not null"`
-}
+// TODO delete or use
+//type HistoryItem struct {
+//	gorm.Model
+//	TakenBy  string    `gorm:"not null"`
+//	ItemType string    `gorm:"not null"`
+//	UsedTime time.Time `gorm:"not null"`
+//	GameType string    `gorm:"not null"`
+//}
 
 // not done via reflection on purpose
 // could be done via general function with generics, not yet present in go
@@ -36,6 +37,13 @@ func (a *AvailableItem) ToMap() map[string]interface{} {
 	result["count"] = a.Count
 	result["gametype"] = a.GameType
 	return result
+}
+
+func (a *AvailableItem) CheckValid() error {
+	if a.Count < 0 {
+		return errors.New("item count can't be negative")
+	}
+	return nil
 }
 
 func (a *TakenItem) ToMap() map[string]interface{} {

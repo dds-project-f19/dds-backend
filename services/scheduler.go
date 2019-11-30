@@ -87,7 +87,7 @@ func GetCronString(time models.TimePoint, days []models.Weekday) (string, error)
 		}
 	}
 	if len(weekformat) <= 0 {
-		return "", errors.New("Empty time")
+		return "", errors.New("empty time")
 	} else {
 		weekformat = weekformat[1:]
 	}
@@ -104,7 +104,8 @@ func AddCronRange(c *cron.Cron, schedule models.UserSchedule) (cron.EntryID, cro
 	if err != nil {
 		return 0, 0, err
 	}
-	id1, err := c.AddFunc(cstr, func() { ScheduleNotify("Your workday has begun!", schedule.Username) })
+	msgS := fmt.Sprintf("Your workday has begun (%s)", schedule.StartTime.ToStr())
+	id1, err := c.AddFunc(cstr, func() { ScheduleNotify(msgS, schedule.Username) })
 	if err != nil {
 		return 0, 0, err
 	}
@@ -113,7 +114,8 @@ func AddCronRange(c *cron.Cron, schedule models.UserSchedule) (cron.EntryID, cro
 		c.Remove(id1)
 		return 0, 0, err
 	}
-	id2, err := c.AddFunc(cstr, func() { ScheduleNotify("Your workday has finished!", schedule.Username) })
+	msgE := fmt.Sprintf("Your workday has finished (%s)", schedule.EndTime.ToStr())
+	id2, err := c.AddFunc(cstr, func() { ScheduleNotify(msgE, schedule.Username) })
 	if err != nil {
 		c.Remove(id1)
 		return 0, 0, err
@@ -137,7 +139,10 @@ func PerformDBCronRecovery(c *cron.Cron) {
 	var schedules []models.UserSchedule
 	database.DB.Model(&models.UserSchedule{}).Find(&schedules)
 	for _, elem := range schedules {
-		AddCronRange(c, elem)
+		_, _, err := AddCronRange(c, elem)
+		if err != nil {
+			log.Printf("unable to restore cron ranges for: %s\n", elem.Username)
+		}
 	}
 }
 

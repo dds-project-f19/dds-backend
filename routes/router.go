@@ -48,8 +48,7 @@ func InitRouter() *gin.Engine {
 		managers.POST("/register_worker", manager.RegisterWorker)
 		managers.GET("/list_workers", manager.ListWorkers)
 		managers.DELETE("/remove_worker/:username", manager.RemoveWorker)
-		managers.PATCH("/add_available_items", manager.AddAvailableItems)
-		managers.PATCH("/remove_available_items", manager.RemoveAvailableItems)
+		managers.PATCH("/set_available_items", manager.SetAvailableItems)
 		managers.GET("/list_available_items", manager.ListAvailableItems)
 		managers.GET("/list_taken_items", manager.ListTakenItems)
 
@@ -86,7 +85,6 @@ func MakeServer() (*gin.Engine, config.GeneralConfig, *gorm.DB, error) {
 		return nil, generalConfig, db, err
 	}
 	controllers.InitializeDefaultUsers() // create user `admin`
-	go services.LaunchBot()
 	go services.LaunchScheduler()
 
 	return InitRouter(), generalConfig, db, nil

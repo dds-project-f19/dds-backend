@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/robfig/cron"
@@ -21,34 +22,52 @@ const (
 	Sunday
 )
 
-func (w *Weekday) ToStr() string {
-	return []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}[int(*w)]
+func (w *Weekday) IsValid() bool {
+	return int(*w) >= 1 && int(*w) <= 7
 }
 
-func PrettyWeekdays(days []Weekday) string {
-	weekdays := map[int]bool{}
-	var weekformat string
+func (w *Weekday) ToStr() string {
+	if !w.IsValid() {
+		return "ErrorWeekday"
+	}
+	return []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}[int(*w)-1]
+}
+
+func SortSetWeekdays(days []Weekday) []Weekday {
+	daysMap := map[int]bool{}
+	var outDays []Weekday
 	var intDays []int
 	for _, e := range days {
 		intDays = append(intDays, int(e))
 	}
 	sort.Ints(intDays)
 	for _, e := range intDays {
-		_, ok := weekdays[e]
+		_, ok := daysMap[e]
 		if !ok { // weekday not already added
-			weekdays[e] = true
-			wk := Weekday(e)
-			weekformat += wk.ToStr() + " "
+			daysMap[e] = true
+			outDays = append(outDays, Weekday(e))
 		}
 	}
-	return weekformat
+	return outDays
+}
+
+func PrettyWeekdays(days []Weekday) string {
+	var weekformat string
+	for _, w := range SortSetWeekdays(days) {
+		weekformat += w.ToStr() + " "
+	}
+	return strings.TrimSpace(weekformat)
 }
 
 func StoreWeekdays(days []Weekday) string {
-	return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(days)), ","), "[]")
+	return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(SortSetWeekdays(days))), ","), "[]")
 }
 
 func LoadWeekdays(in string) ([]Weekday, error) {
+	in = strings.TrimSpace(in)
+	if in == "" {
+		return []Weekday{}, nil
+	}
 	vals := strings.Split(in, ",")
 	var store []Weekday
 	for _, elem := range vals {
@@ -56,9 +75,13 @@ func LoadWeekdays(in string) ([]Weekday, error) {
 		if err != nil {
 			return nil, err
 		}
+		wk := Weekday(i)
+		if !wk.IsValid() {
+			return nil, errors.New("unexpected weekday index")
+		}
 		store = append(store, Weekday(i))
 	}
-	return store, nil
+	return SortSetWeekdays(store), nil
 }
 
 type TimePoint struct {
@@ -75,7 +98,7 @@ func (t *TimePoint) IsValid() bool {
 }
 
 func (t *TimePoint) ToStr() string {
-	return fmt.Sprintf("%d:%d", t.Hour, t.Minute)
+	return fmt.Sprintf("%02d:%02d", t.Hour, t.Minute)
 }
 
 type UserSchedule struct {

@@ -11,6 +11,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	//go services.LaunchBot() // TODO enable
+
 	if err = router.Run(conf.Address); err != nil {
 		panic(err)
 	}

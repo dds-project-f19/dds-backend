@@ -74,7 +74,7 @@ func (a *ManagerController) ListWorkers(c *gin.Context) {
 		return
 	}
 
-	searchItem := models.User{GameType: auth.GameType}
+	searchItem := models.User{GameType: auth.GameType, Claim: common.Worker}
 	var users []models.User
 	resp := database.DB.Model(&models.User{}).Where(&searchItem).Find(&users)
 	if err := resp.Error; err != nil {
@@ -136,12 +136,12 @@ func (a *ManagerController) RemoveWorker(c *gin.Context) {
 	a.JsonSuccess(c, http.StatusOK, gin.H{"message": "user deleted successfully"})
 }
 
-// PATCH /manager/add_available_items
+// PATCH /manager/set_available_items
 // HEADERS: {Authorization: token}
 // {"itemtype":"123","count":77}
 // 200: {}
 // 400,401,500: {"message":"123"}
-func (a *ManagerController) AddAvailableItems(c *gin.Context) {
+func (a *ManagerController) SetAvailableItems(c *gin.Context) {
 	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
@@ -150,6 +150,10 @@ func (a *ManagerController) AddAvailableItems(c *gin.Context) {
 
 	var item models.AvailableItem
 	if err := c.Bind(&item); err == nil {
+		if err := item.CheckValid(); err != nil { // validate
+			a.JsonFail(c, http.StatusBadRequest, err.Error())
+		}
+
 		tx := database.DB.Begin()
 
 		searchItem := models.AvailableItem{GameType: auth.GameType}
@@ -168,61 +172,7 @@ func (a *ManagerController) AddAvailableItems(c *gin.Context) {
 			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
 			return
 		} else {
-			searchItem.Count += item.Count
-			res = tx.Model(&models.AvailableItem{}).Save(&searchItem)
-			if res.Error != nil {
-				tx.Rollback()
-				a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
-				return
-			}
-		}
-		if err := tx.Commit().Error; err != nil {
-			a.JsonFail(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		a.JsonSuccess(c, http.StatusOK, gin.H{})
-	} else {
-		a.JsonFail(c, http.StatusBadRequest, err.Error())
-	}
-
-}
-
-// PATCH /manager/remove_available_items
-// HEADERS: {Authorization: token}
-// {"itemtype":"123","count":77}
-// 200: {}
-// 400,401,500: {"message":"123"}
-func (a *ManagerController) RemoveAvailableItems(c *gin.Context) {
-	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
-	if err != nil {
-		a.JsonFail(c, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	var item models.AvailableItem
-	if err := c.Bind(&item); err == nil {
-		tx := database.DB.Begin()
-
-		searchItem := models.AvailableItem{ItemType: item.ItemType, GameType: auth.GameType}
-		item.GameType = auth.GameType
-		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
-		if res.RecordNotFound() {
-			res := tx.Model(&models.AvailableItem{}).Create(&item)
-			if res.Error != nil {
-				tx.Rollback()
-				a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
-				return
-			}
-		} else if res.Error != nil {
-			tx.Rollback()
-			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
-			return
-		} else {
-			if searchItem.Count < item.Count {
-				a.JsonFail(c, http.StatusBadRequest, "not enough items for deletion")
-				return
-			}
-			searchItem.Count -= item.Count
+			searchItem.Count = item.Count
 			res = tx.Model(&models.AvailableItem{}).Save(&searchItem)
 			if res.Error != nil {
 				tx.Rollback()
