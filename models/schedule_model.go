@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"sort"
 	"strconv"
 	"strings"

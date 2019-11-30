@@ -5,7 +5,7 @@ import (
 	"dds-backend/models"
 	"errors"
 	"fmt"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"log"
 	"sort"
 	"strconv"
