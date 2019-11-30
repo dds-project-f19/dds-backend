@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"dds-backend/common"
 	"dds-backend/database"
 	"dds-backend/models"
 	"fmt"
@@ -11,12 +12,12 @@ func InitializeDefaultUsers() {
 	admin := models.User{
 		Model:    gorm.Model{},
 		Username: "admin",
-		Password: Hash("password"),
+		Password: common.Hash("password"),
 		Name:     "Maksim",
 		Surname:  "Surkov",
 		Phone:    "123",
 		Address:  "Github str. 1, nil",
-		Claim:    Admin,
+		Claim:    common.Admin,
 	}
 	existingAdmin := models.User{Username: admin.Username}
 	if database.DB.Model(&models.User{}).Where(&existingAdmin).First(&existingAdmin).RecordNotFound() {

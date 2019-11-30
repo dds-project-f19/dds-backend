@@ -14,7 +14,8 @@ type User struct {
 	Surname  string
 	Phone    string `gorm:"unique"`
 	Address  string
-	Claim    int `gorm:"not null;default:1"`
+	Claim    int    `gorm:"not null;default:1"`
+	GameType string `gorm:"not null"`
 }
 
 func (u *User) ToMap() map[string]interface{} {
@@ -24,6 +25,7 @@ func (u *User) ToMap() map[string]interface{} {
 	result["surname"] = u.Surname
 	result["phone"] = u.Phone
 	result["address"] = u.Address
+	result["gametype"] = u.GameType
 	return result
 }
 

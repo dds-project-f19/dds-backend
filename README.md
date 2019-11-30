@@ -9,28 +9,34 @@
 
 #### 2 Get dependencies
 
+GO111MODULE should be enabled
+
 ```shell script
 go get -u github.com/go-sql-driver/mysql
 go get -u github.com/jinzhu/gorm
 go get -u github.com/gin-gonic/gin
 go get -u github.com/gin-contrib/cors
 go get -u github.com/gin-contrib/static
+go get -u github.com/go-telegram-bot-api/telegram-bot-api
+go get -u github.com/robfig/cron
 
 ```
-#### 3 Get server
+#### 3 Setup Environment Variables
+**DDS_TELEGRAM_BOT_APIKEY** - api key for telegram bot
+#### 4 Get server
 
 INSIDE $GOPATH/src
 ```shell script
 git clone https://github.com/dds-project-f19/dds-backend
 ```
 
-#### 4 Build
+#### 5 Build
 
 ```shell script
 go install $GOPATH/src/dds-backend
 ```
 
-#### 5 Run
+#### 6 Run
 
 Now you can launch with executable located at `$GOPATH/bin/` called `dds-backend` (.exe for Windows)
 ```shell script
@@ -52,15 +58,17 @@ Usage of dds-backend:
 ### API Description (to be moved to wiki later):
 
 ```golang
-// POST /worker/login
+// POST /common/login
+// HEADERS: {}
 // {"username":"123", "password":"456"}
-// 200: {"token":"1234567"}
+// 200: {"token":"1234567", "claim":"worker|manager|admin|unknown"}
 // 400,403: {"message":"123"}
 
-// POST /worker/register
-// {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
-// 201: {"token":"1234567"}
-// 400,409,500: {"message":"123"}
+// GET /common/telegram_join_link
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"link":"t.me/bot_link/start=regkey123"}
+// 401, 500: {"message":"123"}
 
 // GET /worker/get
 // HEADERS: {Authorization: token}
@@ -82,7 +90,7 @@ Usage of dds-backend:
 
 // POST /worker/return_item
 // HEADERS: {Authorization: token}
-// {"itemtype":"123", "slot":"123"}
+// {"slot":"123"}
 // 201: {"message":"request done, blah blah"}
 // 400,401,500: {"message":"123"}
 
@@ -98,10 +106,10 @@ Usage of dds-backend:
 // 200: {"items":[{"takenby":"username","itemtype":"123","assignedtoslot":"123"}]}
 // 401,500: {"message":"123"}
 
-// POST /manager/login
-// {}
-// 200: {"token":"1234567"}
-// 400,403: {"message":"123"}
+// POST /manager/register_worker
+// {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
+// 201: {"token":"1234567"}
+// 400,409,500: {"message":"123"}
 
 // GET /manager/list_workers
 // HEADERS: {Authorization: token}
@@ -140,7 +148,8 @@ Usage of dds-backend:
 // 401,500: {"message":"123"}
 
 // POST /admin/register_manager
-// {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
+// HEADERS: {}
+// {"username":"required", "password":"required", "gametype":"required", "name":"", "surname":"", "phone":"", "address":""}
 // 201: {}
 // 400,401,409,500: {"message":"123"}
 ```

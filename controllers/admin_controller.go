@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"dds-backend/common"
 	"dds-backend/database"
 	"dds-backend/models"
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,7 @@ type AdminController struct {
 // 201: {}
 // 400,401,409,500: {"message":"123"}
 func (a *AdminController) RegisterManager(c *gin.Context) {
-	_, err := CheckAuthConditional(c, HasEqualOrHigherClaim(Admin))
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Admin))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -28,12 +29,12 @@ func (a *AdminController) RegisterManager(c *gin.Context) {
 			a.JsonFail(c, http.StatusBadRequest, msg)
 			return
 		}
-		newUser.Claim = Manager
+		newUser.Claim = common.Manager
 		tx := database.DB.Begin()
 		existingUser := models.User{Username: newUser.Username}
 		res := tx.Model(&models.User{}).Where(&existingUser).First(&existingUser)
 		if res.RecordNotFound() {
-			newUser.Password = Hash(newUser.Password)
+			newUser.Password = common.Hash(newUser.Password)
 			err = tx.Create(&newUser).Error
 			if err != nil {
 				tx.Rollback()
@@ -57,4 +58,8 @@ func (a *AdminController) RegisterManager(c *gin.Context) {
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}
+}
+
+func (a *AdminController) SetManagerSchedule(c *gin.Context) {
+	// TODO implement
 }

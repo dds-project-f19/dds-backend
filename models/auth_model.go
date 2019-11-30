@@ -11,4 +11,5 @@ type Auth struct {
 	Claim      int       `gorm:"not null"`
 	Token      string    `gorm:"unique;not null"`
 	Expiration time.Time `gorm:"not null"`
+	GameType   string    `gorm:"not null"`
 }

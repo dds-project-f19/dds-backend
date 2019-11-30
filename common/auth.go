@@ -1,4 +1,4 @@
-package controllers
+package common
 
 import (
 	"crypto/sha256"
@@ -23,22 +23,36 @@ const ( // Claim types, greater values include previous claims
 	Admin   = 10
 )
 
+func StringClaim(claim int) string {
+	switch claim {
+	case Worker:
+		return "worker"
+	case Manager:
+		return "manager"
+	case Admin:
+		return "admin"
+	default:
+		return "unknown"
+	}
+}
+
 // accept - username password
 // check credentials, if not valid return error
 // if already authorized return existing token, prolong expiration
 // if authorization token expired return new token, delete existing token
 // if no authorization existed, return new token
-func Authorize(username, passwordHash string) (string, error) {
+func Authorize(username, passwordHash string) (models.Auth, error) {
 	user := models.User{Username: username, Password: passwordHash}
 	auth := models.Auth{Username: username}
 	tx := database.DB.Begin() // begin transaction
 
 	if tx.Model(&models.User{}).Where(&user).First(&user).RecordNotFound() { // check if credentials are valid
-		return "", errors.New("credentials invalid")
+		return models.Auth{}, errors.New("credentials invalid")
 	}
 	now := time.Now()
 	if tx.Model(&models.Auth{}).Where(&auth).First(&auth).RecordNotFound() { // auth record not found
 		auth.Claim = user.Claim
+		auth.GameType = user.GameType
 		auth.Expiration = now.Add(ExpirationDuration)
 		auth.Token = GenerateNewToken(username)
 		tx.Create(&auth)
@@ -49,9 +63,9 @@ func Authorize(username, passwordHash string) (string, error) {
 	}
 	if tx.Error != nil {
 		tx.Rollback()
-		return "", tx.Error
+		return models.Auth{}, tx.Error
 	}
-	return auth.Token, tx.Commit().Error
+	return auth, tx.Commit().Error
 }
 
 type TokenExpirationError struct {
