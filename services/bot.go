@@ -14,8 +14,10 @@ import (
 
 const (
 	RegistrationTokenExpirationDuration = time.Minute * 10
+	BotAlias                            = "dds_project_f19_bot"
 )
 
+// Generate bot registration link for user
 func GetChatRegistrationLink(username string) (string, error) {
 	chat := models.TelegramChat{
 		Username: username,
@@ -39,9 +41,10 @@ func GetChatRegistrationLink(username string) (string, error) {
 			return "", res.Error
 		}
 	}
-	return fmt.Sprintf("t.me/dds_project_f19_bot?start=%s", chat.RegistrationToken), nil
+	return fmt.Sprintf("t.me/%s?start=%s", BotAlias, chat.RegistrationToken), nil
 }
 
+// Find username of user that corresponds to given chat id
 func GetUsernameByChat(chatID int64) (string, error) {
 	chat := models.TelegramChat{ChatID: chatID}
 	res := database.DB.Model(&models.TelegramChat{}).Where(&chat).First(&chat)
@@ -51,6 +54,7 @@ func GetUsernameByChat(chatID int64) (string, error) {
 	return chat.Username, nil
 }
 
+// Find chat id of user that corresponds to given username
 func GetChatIDByUsername(username string) (int64, error) {
 	chat := models.TelegramChat{Username: username}
 	res := database.DB.Model(&models.TelegramChat{}).Where(&chat).First(&chat)
@@ -113,7 +117,8 @@ func SendNotification(username string, text string) error {
 }
 
 func LaunchBot() {
-	BotInstance, err := tgbotapi.NewBotAPI(os.Getenv("DDS_TELEGRAM_BOT_APIKEY"))
+	var err error
+	BotInstance, err = tgbotapi.NewBotAPI(os.Getenv("DDS_TELEGRAM_BOT_APIKEY"))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -141,7 +146,7 @@ func LaunchBot() {
 				readNum, _ := fmt.Sscanf(update.Message.Text, "%s %s", &cmd, &key)
 				msg.ChatID = update.Message.Chat.ID
 				if readNum != 2 {
-					msg.Text = "Sorry, you don't have access to this BotInstance."
+					msg.Text = "Sorry, you don't have access to this bot."
 				} else {
 					// validate key, register chatid for this user
 					msg.Text = fmt.Sprintf("You are registering with key: %s", key)
@@ -164,7 +169,16 @@ func LaunchBot() {
 					case "help":
 						msg.Text = "type /schedule to know your schedule"
 					case "schedule":
-						msg.Text = fmt.Sprintf("Schedule for %s", username)
+						tp1, tp2, wks, err := GetSchedule(username)
+						if err != nil {
+							if _, ok := err.(*ScheduleNotFoundError); ok {
+								msg.Text = "You don't have schedule right now."
+							} else {
+								msg.Text = "Something went wrong, contact your manager."
+							}
+						} else {
+							msg.Text = fmt.Sprintf(PrettySchedule(tp1, tp2, wks))
+						}
 					default:
 						msg.Text = "I don't know that command"
 					}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"dds-backend/routes"
+	"dds-backend/services"
 )
 
 func main() {
@@ -12,7 +13,7 @@ func main() {
 		panic(err)
 	}
 
-	//go services.LaunchBot() // TODO enable
+	go services.LaunchBot() // TODO enable
 
 	if err = router.Run(conf.Address); err != nil {
 		panic(err)

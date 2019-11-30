@@ -40,6 +40,7 @@ func InitRouter() *gin.Engine {
 		workers.POST("/return_item", worker.ReturnItem)
 		workers.GET("/list_available_items", worker.AvailableItems)
 		workers.GET("/list_taken_items", worker.TakenItems)
+		workers.GET("/get_schedule", worker.GetSchedule)
 	}
 
 	managers := apiGroup.Group("/manager")
@@ -51,7 +52,8 @@ func InitRouter() *gin.Engine {
 		managers.PATCH("/set_available_items", manager.SetAvailableItems)
 		managers.GET("/list_available_items", manager.ListAvailableItems)
 		managers.GET("/list_taken_items", manager.ListTakenItems)
-
+		managers.POST("/set_worker_schedule", manager.SetWorkerSchedule)
+		managers.GET("/get_worker_schedule/:username", manager.GetWorkerSchedule)
 	}
 
 	admins := apiGroup.Group("/admin")

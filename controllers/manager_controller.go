@@ -4,7 +4,9 @@ import (
 	"dds-backend/common"
 	"dds-backend/database"
 	"dds-backend/models"
+	"dds-backend/services"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"net/http"
 )
 
@@ -156,7 +158,7 @@ func (a *ManagerController) SetAvailableItems(c *gin.Context) {
 
 		tx := database.DB.Begin()
 
-		searchItem := models.AvailableItem{GameType: auth.GameType}
+		searchItem := models.AvailableItem{ItemType: item.ItemType, GameType: auth.GameType}
 		item.GameType = auth.GameType
 
 		res := tx.Model(&models.AvailableItem{}).Where(&searchItem).First(&searchItem)
@@ -247,10 +249,80 @@ func (a *ManagerController) ListTakenItems(c *gin.Context) {
 	// list taken items in form {"itemtype1":{"takenby":"username1", }}
 }
 
+// POST /manager/set_worker_schedule
+// HEADERS: {Authorization: token}
+// {"username":"abc", "starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"} - workdays are monday, thursday, friday
+// 200: {}
+// 400, 401, 404, 500: {"message":"123"}
 func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
-	// TODO implement
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	type ScheduleRequest struct {
+		Username  string `binding:"required"`
+		StartTime string `binding:"required"`
+		EndTime   string `binding:"required"`
+		Workdays  string `binding:"required"`
+	}
+	request := ScheduleRequest{}
+
+	if err := c.Bind(&request); err == nil {
+		t1, err := models.LoadTimePoint(request.StartTime)
+		if err != nil || !t1.IsValid() {
+			a.JsonFail(c, http.StatusBadRequest, "start time ill-formed")
+			return
+		}
+		t2, err := models.LoadTimePoint(request.EndTime)
+		if err != nil || !t2.IsValid() {
+			a.JsonFail(c, http.StatusBadRequest, "end time ill-formed")
+			return
+		}
+		wks, err := models.LoadWeekdays(request.Workdays)
+		if err != nil {
+			a.JsonFail(c, http.StatusBadRequest, "workdays ill-formed")
+			return
+		}
+		if t2.Before(t1) {
+			a.JsonFail(c, http.StatusBadRequest, "time ordering mismatch")
+			return
+		}
+		err = services.SetSchedule(request.Username, wks, t1, t2)
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				a.JsonFail(c, http.StatusNotFound, err.Error())
+				return
+			} else {
+				a.JsonFail(c, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+	} else {
+		a.JsonFail(c, http.StatusBadRequest, err.Error())
+	}
 }
 
+// GET /manager/get_worker_schedule/{username}
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"}
+//
 func (a *ManagerController) GetWorkerSchedule(c *gin.Context) {
-	// TODO implement
+	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	t1, t2, wks, err := services.GetSchedule(c.Param("username"))
+	if err != nil {
+		if _, ok := err.(*services.ScheduleNotFoundError); ok {
+			a.JsonFail(c, http.StatusNotFound, err.Error())
+		} else {
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+		}
+	} else {
+		a.JsonSuccess(c, http.StatusOK, gin.H{"starttime": t1.ToStr(), "endtime": t2.ToStr(),
+			"workdays": models.StoreWeekdays(wks)})
+	}
 }

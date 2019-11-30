@@ -153,6 +153,38 @@ func TestTimePoint_IsValid(t1 *testing.T) {
 	}
 }
 
+func TestLoadTimePoint(t *testing.T) {
+	type args struct {
+		in string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    models.TimePoint
+		wantErr bool
+	}{
+		{"", args{"23:30"}, models.TimePoint{23, 30}, false},
+		{"", args{"00:00"}, models.TimePoint{0, 0}, false},
+		{"", args{"00:59"}, models.TimePoint{0, 59}, false},
+		{"", args{":0"}, models.TimePoint{}, true},
+		{"", args{"0:"}, models.TimePoint{}, true},
+		{"", args{":"}, models.TimePoint{}, true},
+		{"", args{""}, models.TimePoint{}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := models.LoadTimePoint(tt.args.in)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadTimePoint() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("LoadTimePoint() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestTimePoint_ToStr(t1 *testing.T) {
 	type fields struct {
 		Hour   int

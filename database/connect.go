@@ -9,6 +9,7 @@ import (
 
 var DB *gorm.DB
 
+// Initialize connection to database using defined configuration
 func InitDB(dbConfig config.DBConfig, generalConfig config.GeneralConfig) (*gorm.DB, error) {
 	db, err := gorm.Open("mysql", dbConfig.GetDSN())
 

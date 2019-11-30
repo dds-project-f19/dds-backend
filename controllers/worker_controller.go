@@ -4,6 +4,7 @@ import (
 	"dds-backend/common"
 	"dds-backend/database"
 	"dds-backend/models"
+	"dds-backend/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -252,4 +253,28 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 		toDump = append(toDump, elem.ToMap())
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"items": toDump})
+}
+
+// GET /worker/get_schedule
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"}
+// 401, 404: {"message":"123"}
+func (a *WorkerController) GetSchedule(c *gin.Context) {
+	auth, err := common.CheckAuthConditional(c)
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	t1, t2, wks, err := services.GetSchedule(auth.Username)
+	if err != nil {
+		if _, ok := err.(*services.ScheduleNotFoundError); ok {
+			a.JsonFail(c, http.StatusNotFound, err.Error())
+		} else {
+			a.JsonFail(c, http.StatusInternalServerError, err.Error())
+		}
+	} else {
+		a.JsonSuccess(c, http.StatusOK, gin.H{"starttime": t1.ToStr(), "endtime": t2.ToStr(),
+			"workdays": models.StoreWeekdays(wks)})
+	}
 }

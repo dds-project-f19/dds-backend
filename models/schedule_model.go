@@ -89,6 +89,22 @@ type TimePoint struct {
 	Minute int
 }
 
+func LoadTimePoint(in string) (TimePoint, error) {
+	tp := TimePoint{}
+	read, err := fmt.Sscanf(in, "%d:%d", &tp.Hour, &tp.Minute)
+	if err != nil {
+		return TimePoint{}, err
+	}
+	if read != 2 {
+		return TimePoint{}, errors.New("bad number format")
+	}
+	return tp, nil
+}
+
+func (t *TimePoint) ToStr() string {
+	return fmt.Sprintf("%02d:%02d", t.Hour, t.Minute)
+}
+
 func (t1 *TimePoint) Before(t2 TimePoint) bool {
 	return t1.Hour < t2.Hour || (t1.Hour == t2.Hour) && (t1.Minute < t2.Minute)
 }
@@ -97,15 +113,11 @@ func (t *TimePoint) IsValid() bool {
 	return 23 >= t.Hour && t.Hour >= 0 && 59 >= t.Minute && t.Minute >= 0
 }
 
-func (t *TimePoint) ToStr() string {
-	return fmt.Sprintf("%02d:%02d", t.Hour, t.Minute)
-}
-
 type UserSchedule struct {
 	gorm.Model
 	Username    string       `gorm:"unique_index;not null"`
-	StartTime   TimePoint    `gorm:"not null"`
-	EndTime     TimePoint    `gorm:"not null"`
+	StartTime   string       `gorm:"not null"`
+	EndTime     string       `gorm:"not null"`
 	Workdays    string       `gorm:"not null"`
 	StartCronID cron.EntryID `gorm:"not null"`
 	EndCronID   cron.EntryID `gorm:"not null"`

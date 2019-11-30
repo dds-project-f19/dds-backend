@@ -2,15 +2,18 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/dds-project-f19/dds-backend)](https://goreportcard.com/report/github.com/dds-project-f19/dds-backend)
 [![MIT](https://img.shields.io/github/license/dds-project-f19/dds-backend)](https://raw.githubusercontent.com/dds-project-f19/dds-backend/master/LICENSE)
 ![SIZE](https://img.shields.io/github/repo-size/dds-project-f19/dds-backend)
+[![Actions Status](https://github.com/dds-project-f19/dds-backend/workflows/Go/badge.svg)](https://github.com/dds-project-f19/dds-backend/actions)
 
 ### Build and Run:
 
 #### 1 Configure database link (mysql) /config/config.yaml:
 
-#### 2 Get dependencies
+#### 2 Setup Environment Variables
+**DDS_TELEGRAM_BOT_APIKEY** - api key for telegram bot
 
-GO111MODULE should be enabled
+**GO111MODULE**=auto - enable go modules
 
+#### 3 Get dependencies
 ```shell script
 go get -u github.com/go-sql-driver/mysql
 go get -u github.com/jinzhu/gorm
@@ -19,10 +22,7 @@ go get -u github.com/gin-contrib/cors
 go get -u github.com/gin-contrib/static
 go get -u github.com/go-telegram-bot-api/telegram-bot-api
 go get -u github.com/robfig/cron
-
 ```
-#### 3 Setup Environment Variables
-**DDS_TELEGRAM_BOT_APIKEY** - api key for telegram bot
 #### 4 Get server
 
 INSIDE $GOPATH/src
@@ -146,4 +146,22 @@ Usage of dds-backend:
 // {"username":"required", "password":"required", "gametype":"required", "name":"", "surname":"", "phone":"", "address":""}
 // 201: {}
 // 400,401,409,500: {"message":"123"}
+
+// GET /manager/get_worker_schedule/{username}
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"}
+//
+
+// POST /manager/set_worker_schedule
+// HEADERS: {Authorization: token}
+// {"username":"abc", "starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"} - workdays are monday, thursday, friday
+// 200: {}
+// 400, 401, 404, 500: {"message":"123"}
+
+// GET /worker/get_schedule
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"}
+// 401, 404: {"message":"123"}
 ```
