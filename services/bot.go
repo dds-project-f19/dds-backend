@@ -93,9 +93,6 @@ var commandKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
-func sendDelayedMessage(bot *tgbotapi.BotAPI, message string, chatID int64) {
-}
-
 var BotInstance *tgbotapi.BotAPI
 
 func SendNotification(username string, text string) error {
@@ -173,9 +170,7 @@ func LaunchBot() {
 					}
 				}
 			} else {
-				chatID := update.Message.Chat.ID
-				msg = tgbotapi.NewMessage(chatID, "Bazinga")
-				go sendDelayedMessage(BotInstance, "Delayed Message", chatID)
+				// TODO fill this `not understood` branch
 			}
 
 			msg.ReplyMarkup = commandKeyboard

@@ -140,7 +140,7 @@ func (a *WorkerController) TakeItem(c *gin.Context) {
 
 // POST /worker/return_item
 // HEADERS: {Authorization: token}
-// {"itemtype":"123", "slot":"123"}
+// {"slot":"123"}
 // 201: {"message":"request done, blah blah"}
 // 400,401,500: {"message":"123"}
 func (a *WorkerController) ReturnItem(c *gin.Context) {
@@ -150,8 +150,7 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 		return
 	}
 	type moveRequest struct {
-		ItemType string
-		Slot     string
+		Slot string
 	}
 
 	var request moveRequest
@@ -159,7 +158,6 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 	var taken models.TakenItem
 
 	if err := c.Bind(&request); err == nil {
-		taken.ItemType = request.ItemType
 		taken.AssignedToSlot = request.Slot
 		taken.TakenBy = auth.Username
 		taken.GameType = auth.GameType
@@ -170,7 +168,7 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 			a.JsonFail(c, http.StatusBadRequest, res.Error.Error())
 			return
 		}
-		available.ItemType = request.ItemType
+		available.ItemType = taken.ItemType
 		available.GameType = auth.GameType
 		res = tx.Model(&models.AvailableItem{}).Where(&available).First(&available)
 		if res.Error != nil {

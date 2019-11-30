@@ -300,3 +300,7 @@ func (a *ManagerController) ListTakenItems(c *gin.Context) {
 func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
 	// TODO implement
 }
+
+func (a *ManagerController) GetWorkerSchedule(c *gin.Context) {
+	// TODO implement
+}

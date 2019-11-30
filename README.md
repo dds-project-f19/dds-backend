@@ -9,6 +9,8 @@
 
 #### 2 Get dependencies
 
+GO111MODULE should be enabled
+
 ```shell script
 go get -u github.com/go-sql-driver/mysql
 go get -u github.com/jinzhu/gorm
@@ -16,6 +18,7 @@ go get -u github.com/gin-gonic/gin
 go get -u github.com/gin-contrib/cors
 go get -u github.com/gin-contrib/static
 go get -u github.com/go-telegram-bot-api/telegram-bot-api
+go get -u github.com/robfig/cron
 
 ```
 #### 3 Setup Environment Variables
@@ -58,7 +61,7 @@ Usage of dds-backend:
 // POST /common/login
 // HEADERS: {}
 // {"username":"123", "password":"456"}
-// 200: {"token":"1234567"}
+// 200: {"token":"1234567", "claim":"worker|manager|admin|unknown"}
 // 400,403: {"message":"123"}
 
 // GET /common/telegram_join_link
@@ -87,7 +90,7 @@ Usage of dds-backend:
 
 // POST /worker/return_item
 // HEADERS: {Authorization: token}
-// {"itemtype":"123", "slot":"123"}
+// {"slot":"123"}
 // 201: {"message":"request done, blah blah"}
 // 400,401,500: {"message":"123"}
 
