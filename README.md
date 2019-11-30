@@ -123,13 +123,7 @@ Usage of dds-backend:
 // 200: {}
 // 400,401,404,500: {"message":"123"}
 
-// PATCH /manager/add_available_items
-// HEADERS: {Authorization: token}
-// {"itemtype":"123","count":77}
-// 200: {}
-// 400,401,500: {"message":"123"}
-
-// PATCH /manager/remove_available_items
+// PATCH /manager/set_available_items
 // HEADERS: {Authorization: token}
 // {"itemtype":"123","count":77}
 // 200: {}
