@@ -30,6 +30,7 @@ func (a *CommonController) Login(c *gin.Context) {
 			return
 		}
 		a.JsonSuccess(c, http.StatusOK, gin.H{"token": auth.Token, "claim": common.StringClaim(auth.Claim), "gametype": auth.GameType})
+		c.SetCookie("DDS_TOKEN", auth.Token, 3600, "", ".amazonaws.com", false, false)
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}

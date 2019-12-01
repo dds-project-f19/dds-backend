@@ -341,7 +341,7 @@ func (a *ManagerController) CheckOverlap(c *gin.Context) {
 	type CheckRequest struct {
 		StartTime string `binding:"required"`
 		EndTime   string `binding:"required"`
-		Workdays  string `binding:"required"`
+		Workdays  string
 	}
 	var request CheckRequest
 	var schs []models.UserSchedule
