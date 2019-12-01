@@ -234,7 +234,7 @@ func (a *ManagerController) ListTakenItems(c *gin.Context) {
 		return
 	}
 
-	searchItem := models.AvailableItem{GameType: auth.GameType}
+	searchItem := models.TakenItem{GameType: auth.GameType}
 	var takenItems []models.TakenItem
 	resp := database.DB.Model(&models.TakenItem{}).Where(&searchItem).Find(&takenItems)
 	if err := resp.Error; err != nil {

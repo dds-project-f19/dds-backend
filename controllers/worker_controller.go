@@ -7,6 +7,7 @@ import (
 	"dds-backend/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 type WorkerController struct {
@@ -67,6 +68,7 @@ func (a *WorkerController) Update(c *gin.Context) {
 	}
 }
 
+// TODO remove
 func (a *WorkerController) CheckAccess(c *gin.Context) {
 	if _, err := common.CheckAuthConditional(c); err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
@@ -79,11 +81,20 @@ func (a *WorkerController) CheckAccess(c *gin.Context) {
 // HEADERS: {Authorization: token}
 // {"itemtype":"123", "slot":"123"}
 // 201: {"message":"request done, blah blah"}
-// 400,401,500: {"message":"123"}
+// 400,401,403,500: {"message":"123"}
 func (a *WorkerController) TakeItem(c *gin.Context) {
 	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Worker))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	ok, res := IsCurrentSlotAvailable(auth.Username)
+	if res != nil {
+		a.JsonFail(c, http.StatusInternalServerError, res.Error())
+		return
+	}
+	if !ok {
+		a.JsonFail(c, http.StatusForbidden, "can not operate in this time slot")
 		return
 	}
 	type moveRequest struct {
@@ -150,6 +161,15 @@ func (a *WorkerController) ReturnItem(c *gin.Context) {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
+	ok, res := IsCurrentSlotAvailable(auth.Username)
+	if res != nil {
+		a.JsonFail(c, http.StatusInternalServerError, res.Error())
+		return
+	}
+	if !ok {
+		a.JsonFail(c, http.StatusForbidden, "can not operate in this time slot")
+		return
+	}
 	type moveRequest struct {
 		Slot string
 	}
@@ -212,6 +232,15 @@ func (a *WorkerController) AvailableItems(c *gin.Context) {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
+	ok, res := IsCurrentSlotAvailable(auth.Username)
+	if res != nil {
+		a.JsonFail(c, http.StatusInternalServerError, res.Error())
+		return
+	}
+	if !ok {
+		a.JsonFail(c, http.StatusForbidden, "can not operate in this time slot")
+		return
+	}
 
 	searchItem := models.AvailableItem{GameType: auth.GameType}
 	var items []models.AvailableItem
@@ -240,6 +269,15 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
 	}
+	ok, res := IsCurrentSlotAvailable(auth.Username)
+	if res != nil {
+		a.JsonFail(c, http.StatusInternalServerError, res.Error())
+		return
+	}
+	if !ok {
+		a.JsonFail(c, http.StatusForbidden, "can not operate in this time slot")
+		return
+	}
 
 	searchItem := models.TakenItem{TakenBy: auth.Username, GameType: auth.GameType}
 	var items []models.TakenItem
@@ -259,7 +297,7 @@ func (a *WorkerController) TakenItems(c *gin.Context) {
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"}
-// 401, 404: {"message":"123"}
+// 401, 404, 500: {"message":"123"}
 func (a *WorkerController) GetSchedule(c *gin.Context) {
 	auth, err := common.CheckAuthConditional(c)
 	if err != nil {
@@ -277,4 +315,64 @@ func (a *WorkerController) GetSchedule(c *gin.Context) {
 		a.JsonSuccess(c, http.StatusOK, gin.H{"starttime": t1.ToStr(), "endtime": t2.ToStr(),
 			"workdays": models.StoreWeekdays(wks)})
 	}
+}
+
+// Get current time (on server) and check if worker has active time slot at the moment
+func IsCurrentSlotAvailable(username string) (bool, error) {
+	current := time.Now()
+	ctp := models.TimePoint{current.Hour(), current.Minute()}
+	wkdi := int(current.Weekday())
+	var cwk models.Weekday
+	if wkdi == 0 {
+		cwk = models.Weekday(7)
+	} else {
+		cwk = models.Weekday(wkdi)
+	}
+	var schs []models.UserSchedule
+	searchItem := models.UserSchedule{Username: username}
+	res := database.DB.Model(&models.UserSchedule{}).Where(&searchItem).Find(&schs)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	for _, e := range schs {
+		tp1, err := models.LoadTimePoint(e.StartTime)
+		if err != nil {
+			return false, err
+		}
+		tp2, err := models.LoadTimePoint(e.EndTime)
+		if err != nil {
+			return false, err
+		}
+		if (tp1.Before(ctp) || tp1.Equal(ctp)) && (ctp.Before(tp2) || ctp.Equal(tp2)) {
+			lwk, err := models.LoadWeekdays(e.Workdays)
+			if err != nil {
+				return false, err
+			}
+			for _, w := range lwk {
+				if w == cwk {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+// GET /worker/check_currently_available
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"available":false}
+// 401, 500: {"message":"123"}
+func (a *WorkerController) CheckCurrentlyAvailable(c *gin.Context) {
+	auth, err := common.CheckAuthConditional(c)
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	ok, res := IsCurrentSlotAvailable(auth.Username)
+	if res != nil {
+		a.JsonFail(c, http.StatusInternalServerError, res.Error())
+		return
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{"available": ok})
 }

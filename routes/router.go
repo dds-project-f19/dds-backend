@@ -41,6 +41,7 @@ func InitRouter() *gin.Engine {
 		workers.GET("/list_available_items", worker.AvailableItems)
 		workers.GET("/list_taken_items", worker.TakenItems)
 		workers.GET("/get_schedule", worker.GetSchedule)
+		workers.GET("/check_currently_available", worker.CheckCurrentlyAvailable)
 	}
 
 	managers := apiGroup.Group("/manager")

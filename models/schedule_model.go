@@ -109,6 +109,10 @@ func (t1 *TimePoint) Before(t2 TimePoint) bool {
 	return t1.Hour < t2.Hour || (t1.Hour == t2.Hour) && (t1.Minute < t2.Minute)
 }
 
+func (t1 *TimePoint) Equal(t2 TimePoint) bool {
+	return t1.Hour == t2.Hour && t1.Minute == t2.Minute
+}
+
 func (t *TimePoint) IsValid() bool {
 	return 23 >= t.Hour && t.Hour >= 0 && 59 >= t.Minute && t.Minute >= 0
 }
