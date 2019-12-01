@@ -80,7 +80,7 @@ func PrettySchedule(startTime models.TimePoint, endTime models.TimePoint, workda
 
 // Set schedule for user, either create new or change existing
 // Event is saved into database and to running cron instance
-func SetSchedule(username string, workdays []models.Weekday, startTime, endTime models.TimePoint) error {
+func SetSchedule(username string, gametype string, workdays []models.Weekday, startTime, endTime models.TimePoint) error {
 	txn := database.DB.Begin()
 	searchSchedule := models.UserSchedule{Username: username}
 	res := txn.Model(&models.UserSchedule{}).Where(&searchSchedule).First(&searchSchedule)
@@ -92,6 +92,7 @@ func SetSchedule(username string, workdays []models.Weekday, startTime, endTime 
 	searchSchedule.StartTime = startTime.ToStr()
 	searchSchedule.EndTime = endTime.ToStr()
 	searchSchedule.Workdays = models.StoreWeekdays(workdays)
+	searchSchedule.GameType = gametype
 	id1, id2, err := AddCronRange(CronInstance, searchSchedule)
 	if err != nil {
 		return err

@@ -54,6 +54,7 @@ func InitRouter() *gin.Engine {
 		managers.GET("/list_taken_items", manager.ListTakenItems)
 		managers.POST("/set_worker_schedule", manager.SetWorkerSchedule)
 		managers.GET("/get_worker_schedule/:username", manager.GetWorkerSchedule)
+		managers.POST("/check_overlap", manager.CheckOverlap)
 	}
 
 	admins := apiGroup.Group("/admin")

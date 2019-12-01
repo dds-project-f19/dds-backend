@@ -121,4 +121,5 @@ type UserSchedule struct {
 	Workdays    string       `gorm:"not null"`
 	StartCronID cron.EntryID `gorm:"not null"`
 	EndCronID   cron.EntryID `gorm:"not null"`
+	GameType    string       `gorm:"not null"`
 }

@@ -14,7 +14,7 @@ type CommonController struct {
 // POST /common/login
 // HEADERS: {}
 // {"username":"123", "password":"456"}
-// 200: {"token":"1234567"}
+// 200: {"token":"1234567", "claim":"worker|manager|admin", "gametype":"surgeon1"}
 // 400,403: {"message":"123"}
 func (a *CommonController) Login(c *gin.Context) {
 	type RequestBody struct {
@@ -29,7 +29,7 @@ func (a *CommonController) Login(c *gin.Context) {
 			a.JsonFail(c, http.StatusForbidden, err.Error())
 			return
 		}
-		a.JsonSuccess(c, http.StatusOK, gin.H{"token": auth.Token, "claim": common.StringClaim(auth.Claim)})
+		a.JsonSuccess(c, http.StatusOK, gin.H{"token": auth.Token, "claim": common.StringClaim(auth.Claim), "gametype": auth.GameType})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}

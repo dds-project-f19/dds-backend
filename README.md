@@ -61,7 +61,7 @@ Usage of dds-backend:
 // POST /common/login
 // HEADERS: {}
 // {"username":"123", "password":"456"}
-// 200: {"token":"1234567", "claim":"worker|manager|admin|unknown"}
+// 200: {"token":"1234567", "claim":"worker|manager|admin", "gametype":"surgeon1"}
 // 400,403: {"message":"123"}
 
 // GET /common/telegram_join_link
@@ -164,4 +164,10 @@ Usage of dds-backend:
 // {}
 // 200: {"starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"}
 // 401, 404: {"message":"123"}
+
+// POST /manager/check_overlap
+// HEADERS: {Authorization: token}
+// {"starttime":"10:20", "endtime":"10:30", "workdays":"1,2,3"}
+// 200: {"overlap":true} - true (not string) for overlap error, false for no overlap
+// 401, 404, 500: {"message":"123"}
 ```

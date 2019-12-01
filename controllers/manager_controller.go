@@ -255,7 +255,7 @@ func (a *ManagerController) ListTakenItems(c *gin.Context) {
 // 200: {}
 // 400, 401, 404, 500: {"message":"123"}
 func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
-	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
 		a.JsonFail(c, http.StatusUnauthorized, err.Error())
 		return
@@ -288,7 +288,7 @@ func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
 			a.JsonFail(c, http.StatusBadRequest, "time ordering mismatch")
 			return
 		}
-		err = services.SetSchedule(request.Username, wks, t1, t2)
+		err = services.SetSchedule(request.Username, auth.GameType, wks, t1, t2)
 		if err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				a.JsonFail(c, http.StatusNotFound, err.Error())
@@ -307,7 +307,7 @@ func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
 // HEADERS: {Authorization: token}
 // {}
 // 200: {"starttime":"12:13", "endtime":"14:13", "workdays";"1,4,5"}
-//
+// 401, 404, 500: {"message":"123"}
 func (a *ManagerController) GetWorkerSchedule(c *gin.Context) {
 	_, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
 	if err != nil {
@@ -324,5 +324,78 @@ func (a *ManagerController) GetWorkerSchedule(c *gin.Context) {
 	} else {
 		a.JsonSuccess(c, http.StatusOK, gin.H{"starttime": t1.ToStr(), "endtime": t2.ToStr(),
 			"workdays": models.StoreWeekdays(wks)})
+	}
+}
+
+// POST /manager/check_overlap
+// HEADERS: {Authorization: token}
+// {"starttime":"10:20", "endtime":"10:30", "workdays":"1,2,3"}
+// 200: {"overlap":true} - true (not string) for overlap error, false for no overlap
+// 401, 404, 500: {"message":"123"}
+func (a *ManagerController) CheckOverlap(c *gin.Context) {
+	auth, err := common.CheckAuthConditional(c, common.HasEqualOrHigherClaim(common.Manager))
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	type CheckRequest struct {
+		StartTime string `binding:"required"`
+		EndTime   string `binding:"required"`
+		Workdays  string `binding:"required"`
+	}
+	var request CheckRequest
+	var schs []models.UserSchedule
+	searchItem := models.UserSchedule{GameType: auth.GameType}
+	if err := c.Bind(&request); err == nil {
+		res := database.DB.Model(&models.UserSchedule{}).Where(&searchItem).Find(&schs)
+		if res.Error != nil {
+			a.JsonFail(c, http.StatusInternalServerError, res.Error.Error())
+			return
+		}
+		t1cur, err := models.LoadTimePoint(request.StartTime)
+		if err != nil {
+			a.JsonFail(c, http.StatusBadRequest, "parsing time failed")
+			return
+		}
+		t2cur, err := models.LoadTimePoint(request.EndTime)
+		if err != nil {
+			a.JsonFail(c, http.StatusBadRequest, "parsing time failed")
+			return
+		}
+		wrk, err := models.LoadWeekdays(request.Workdays)
+		if err != nil {
+			a.JsonFail(c, http.StatusBadRequest, "parsing weekdays failed")
+		}
+		for _, e := range schs {
+			t1, err := models.LoadTimePoint(e.StartTime)
+			if err != nil {
+				a.JsonFail(c, http.StatusInternalServerError, "parsing time failed")
+				return
+			}
+			t2, err := models.LoadTimePoint(e.EndTime)
+			if err != nil {
+				a.JsonFail(c, http.StatusInternalServerError, "parsing time failed")
+				return
+			}
+			we, err := models.LoadWeekdays(e.Workdays)
+			if err != nil {
+				a.JsonFail(c, http.StatusInternalServerError, "parsing workdays failed")
+				return
+			}
+			if t1cur.Before(t2) && t1.Before(t1cur) || t2cur.Before(t2) && t1.Before(t2cur) {
+				for _, w1 := range we {
+					for _, w2 := range wrk {
+						if w1 == w2 {
+							a.JsonSuccess(c, http.StatusOK, gin.H{"overlap": true})
+							return
+						}
+					}
+				}
+			}
+
+		}
+		a.JsonSuccess(c, http.StatusOK, gin.H{"overlap": false})
+	} else {
+		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}
 }
