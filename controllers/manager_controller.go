@@ -298,6 +298,7 @@ func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
 				return
 			}
 		}
+		a.JsonSuccess(c, http.StatusOK, gin.H{})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}

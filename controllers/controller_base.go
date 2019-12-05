@@ -7,8 +7,8 @@ import (
 type ControllerBase struct {
 }
 
-func (basic *ControllerBase) JsonSuccess(c *gin.Context, status int, h gin.H) {
-	c.JSON(status, h)
+func (basic *ControllerBase) JsonSuccess(c *gin.Context, status int, obj interface{}) {
+	c.JSON(status, obj)
 }
 
 func (basic *ControllerBase) JsonFail(c *gin.Context, status int, message string) {
