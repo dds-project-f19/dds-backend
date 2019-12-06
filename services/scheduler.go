@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/robfig/cron/v3"
 	"log"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -128,11 +129,16 @@ func SetSchedule(username string, gametype string, workdays []models.Weekday, st
 // Format event time and date occurances into cron string
 func GetCronString(time models.TimePoint, days []models.Weekday) (string, error) {
 	weekformat := ""
+	weekcont := []int{}
 	for _, e := range models.SortSetWeekdays(days) {
 		if !e.IsValid() {
 			return "", errors.New("invalid weekday")
 		}
-		weekformat += "," + strconv.Itoa(int(e)%7) // sunday is 0, saturday is 6
+		weekcont = append(weekcont, int(e)%7) // sunday is 0, saturday is 6
+	}
+	sort.Ints(weekcont)
+	for _, e := range weekcont {
+		weekformat += "," + strconv.Itoa(int(e)%7)
 	}
 	if len(weekformat) <= 0 {
 		return "", errors.New("empty time")

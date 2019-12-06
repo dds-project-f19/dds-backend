@@ -20,7 +20,7 @@ func TestGetCronString(t *testing.T) {
 		{"Basic", args{models.TimePoint{10, 20}, []models.Weekday{models.Monday, models.Tuesday}}, "20 10 * * 1,2", false},
 		{"None", args{models.TimePoint{10, 20}, []models.Weekday{}}, "", true},
 		{"Single", args{models.TimePoint{10, 20}, []models.Weekday{models.Wednesday}}, "20 10 * * 3", false},
-		{"Order", args{models.TimePoint{10, 20}, []models.Weekday{models.Sunday, models.Thursday, models.Tuesday}}, "20 10 * * 2,4,7", false},
+		{"Order", args{models.TimePoint{10, 20}, []models.Weekday{models.Sunday, models.Thursday, models.Tuesday}}, "20 10 * * 0,2,4", false},
 		{"Duplicate", args{models.TimePoint{10, 20}, []models.Weekday{models.Friday, models.Friday}}, "20 10 * * 5", false},
 	}
 	for _, tt := range tests {
