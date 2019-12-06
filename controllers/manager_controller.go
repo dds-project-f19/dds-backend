@@ -365,6 +365,7 @@ func (a *ManagerController) CheckOverlap(c *gin.Context) {
 		wrk, err := models.LoadWeekdays(request.Workdays)
 		if err != nil {
 			a.JsonFail(c, http.StatusBadRequest, "parsing weekdays failed")
+			return
 		}
 		for _, e := range schs {
 			t1, err := models.LoadTimePoint(e.StartTime)
@@ -382,7 +383,8 @@ func (a *ManagerController) CheckOverlap(c *gin.Context) {
 				a.JsonFail(c, http.StatusInternalServerError, "parsing workdays failed")
 				return
 			}
-			if t1cur.Before(t2) && t1.Before(t1cur) || t2cur.Before(t2) && t1.Before(t2cur) {
+			if t1cur.Before(t2) && t1.Before(t1cur) || t2cur.Before(t2) && t1.Before(t2cur) ||
+				t1.Before(t2cur) && t1cur.Before(t1) || t2.Before(t2cur) && t1cur.Before(t2) {
 				for _, w1 := range we {
 					for _, w2 := range wrk {
 						if w1 == w2 {

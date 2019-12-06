@@ -2,4 +2,4 @@
 /vendor/*
 !/vendor/vendor.json
 /build
-/front/
+/front/*
