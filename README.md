@@ -108,7 +108,7 @@ Usage of dds-backend:
 
 // POST /manager/register_worker
 // {"username":"required", "password":"required", "name":"", "surname":"", "phone":"", "address":""}
-// 201: {"token":"1234567"}
+// 201: {}
 // 400,409,500: {"message":"123"}
 
 // GET /manager/list_workers

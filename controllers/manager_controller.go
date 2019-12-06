@@ -57,8 +57,7 @@ func (a *ManagerController) RegisterWorker(c *gin.Context) {
 			a.JsonFail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-
-		a.JsonSuccess(c, http.StatusCreated, gin.H{"message": "user created successfully"})
+		a.JsonSuccess(c, http.StatusCreated, gin.H{})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}

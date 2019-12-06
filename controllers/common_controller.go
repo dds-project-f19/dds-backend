@@ -29,8 +29,10 @@ func (a *CommonController) Login(c *gin.Context) {
 			a.JsonFail(c, http.StatusForbidden, err.Error())
 			return
 		}
+		c.SetCookie("dds-auth-gametype", auth.GameType, 60*60*12, "/", "", false, false)
+		c.SetCookie("dds-auth-claim", common.StringClaim(auth.Claim), 60*60*12, "/", "", false, false)
 		c.SetCookie("dds-auth-token", auth.Token, 60*60*12, "/", "", false, false)
-		a.JsonSuccess(c, http.StatusOK, gin.H{"token": auth.Token, "claim": common.StringClaim(auth.Claim), "gametype": auth.GameType})
+		a.JsonSuccess(c, http.StatusOK, gin.H{})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}

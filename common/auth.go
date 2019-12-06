@@ -157,11 +157,10 @@ func GenerateRandomString(length int) string {
 }
 
 func fetchToken(c *gin.Context) (string, error) {
-	authLine := c.Request.Header["Authorization"]
-	if len(authLine) > 0 {
-		return authLine[0], nil
+	if authLine, err := c.Cookie("dds-auth-token"); err != nil {
+		return "", err
 	} else {
-		return "", errors.New("authorization missing")
+		return authLine, nil
 	}
 }
 
