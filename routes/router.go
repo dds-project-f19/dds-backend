@@ -73,7 +73,9 @@ func InitRouter() *gin.Engine {
 	}
 
 	router.Use(static.Serve("/", static.LocalFile("./front/build", true)))
-
+	router.NoRoute(func(c *gin.Context) {
+		c.File("./front/build/index.html")
+	})
 	return router
 
 }

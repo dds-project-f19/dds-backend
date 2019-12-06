@@ -13,7 +13,7 @@ func main() {
 		panic(err)
 	}
 
-	go services.LaunchBot() // TODO enable
+	go services.LaunchBot()
 
 	if err = router.Run(conf.Address); err != nil {
 		panic(err)
