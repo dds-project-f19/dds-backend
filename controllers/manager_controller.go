@@ -27,12 +27,12 @@ func (a *ManagerController) RegisterWorker(c *gin.Context) {
 
 	var newUser models.User
 	if err := c.Bind(&newUser); err == nil {
+		newUser.Claim = common.Worker
+		newUser.GameType = auth.GameType
 		if valid, msg := newUser.IsValid(); !valid {
 			a.JsonFail(c, http.StatusBadRequest, msg)
 			return
 		}
-		newUser.Claim = common.Worker
-		newUser.GameType = auth.GameType
 		tx := database.DB.Begin()
 		existingUser := models.User{Username: newUser.Username}
 		res := tx.Model(&models.User{}).Where(&existingUser).First(&existingUser)
