@@ -329,7 +329,7 @@ func (a *ManagerController) GetWorkerSchedule(c *gin.Context) {
 
 // POST /manager/check_overlap
 // HEADERS: {Authorization: token}
-// {"starttime":"10:20", "endtime":"10:30", "workdays":"1,2,3"}
+// {"username":"worker1", "starttime":"10:20", "endtime":"10:30", "workdays":"1,2,3"}
 // 200: {"overlap":true} - true (not string) for overlap error, false for no overlap
 // 401, 404, 500: {"message":"123"}
 func (a *ManagerController) CheckOverlap(c *gin.Context) {
@@ -339,6 +339,7 @@ func (a *ManagerController) CheckOverlap(c *gin.Context) {
 		return
 	}
 	type CheckRequest struct {
+		Username  string
 		StartTime string `binding:"required"`
 		EndTime   string `binding:"required"`
 		Workdays  string
@@ -368,6 +369,9 @@ func (a *ManagerController) CheckOverlap(c *gin.Context) {
 			return
 		}
 		for _, e := range schs {
+			if e.Username == request.Username {
+				continue // don't check for same user
+			}
 			t1, err := models.LoadTimePoint(e.StartTime)
 			if err != nil {
 				a.JsonFail(c, http.StatusInternalServerError, "parsing time failed")

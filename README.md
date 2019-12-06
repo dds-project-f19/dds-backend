@@ -167,7 +167,7 @@ Usage of dds-backend:
 
 // POST /manager/check_overlap
 // HEADERS: {Authorization: token}
-// {"starttime":"10:20", "endtime":"10:30", "workdays":"1,2,3"}
+// {"username":"worker1", "starttime":"10:20", "endtime":"10:30", "workdays":"1,2,3"}
 // 200: {"overlap":true} - true (not string) for overlap error, false for no overlap
 // 401, 404, 500: {"message":"123"}
 
