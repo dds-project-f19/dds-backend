@@ -170,4 +170,10 @@ Usage of dds-backend:
 // {"starttime":"10:20", "endtime":"10:30", "workdays":"1,2,3"}
 // 200: {"overlap":true} - true (not string) for overlap error, false for no overlap
 // 401, 404, 500: {"message":"123"}
+
+// GET /worker/check_currently_available
+// HEADERS: {Authorization: token}
+// {}
+// 200: {"available":false}
+// 401, 500: {"message":"123"}
 ```

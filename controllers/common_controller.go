@@ -29,8 +29,8 @@ func (a *CommonController) Login(c *gin.Context) {
 			a.JsonFail(c, http.StatusForbidden, err.Error())
 			return
 		}
+		c.SetCookie("dds-auth-token", auth.Token, 60*60*12, "/", "", false, false)
 		a.JsonSuccess(c, http.StatusOK, gin.H{"token": auth.Token, "claim": common.StringClaim(auth.Claim), "gametype": auth.GameType})
-		c.SetCookie("DDS_TOKEN", auth.Token, 3600, "", ".amazonaws.com", false, false)
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
 	}
