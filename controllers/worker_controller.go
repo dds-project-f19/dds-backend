@@ -319,7 +319,7 @@ func (a *WorkerController) GetSchedule(c *gin.Context) {
 
 // Get current time (on server) and check if worker has active time slot at the moment
 func IsCurrentSlotAvailable(username string) (bool, error) {
-	current := time.Now()
+	current := time.Now().UTC()
 	ctp := models.TimePoint{current.Hour(), current.Minute()}
 	wkdi := int(current.Weekday())
 	var cwk models.Weekday

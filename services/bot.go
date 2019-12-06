@@ -26,7 +26,7 @@ func GetChatRegistrationLink(username string) (string, error) {
 	if res.RecordNotFound() {
 		// need to be registered
 		chat.RegistrationToken = common.GenerateNewToken()
-		chat.TokenExpiration = time.Now().Add(RegistrationTokenExpirationDuration)
+		chat.TokenExpiration = time.Now().UTC().Add(RegistrationTokenExpirationDuration)
 		res = database.DB.Model(&models.TelegramChat{}).Create(&chat)
 		if res.Error != nil {
 			return "", res.Error
@@ -35,7 +35,7 @@ func GetChatRegistrationLink(username string) (string, error) {
 		return "", res.Error
 	} else {
 		chat.RegistrationToken = common.GenerateNewToken()
-		chat.TokenExpiration = time.Now().Add(RegistrationTokenExpirationDuration)
+		chat.TokenExpiration = time.Now().UTC().Add(RegistrationTokenExpirationDuration)
 		res = database.DB.Model(&models.TelegramChat{}).Save(&chat)
 		if res.Error != nil {
 			return "", res.Error
@@ -78,7 +78,7 @@ func ValidateChat(registrationToken string, chatID int64) error {
 		return errors.New("something went wrong")
 	} else {
 		// ok
-		if chat.TokenExpiration.Before(time.Now()) {
+		if chat.TokenExpiration.Before(time.Now().UTC()) {
 			return errors.New("token has expired")
 		}
 		chat.ChatID = chatID

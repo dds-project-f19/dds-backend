@@ -49,7 +49,7 @@ func Authorize(username, passwordHash string) (models.Auth, error) {
 	if tx.Model(&models.User{}).Where(&user).First(&user).RecordNotFound() { // check if credentials are valid
 		return models.Auth{}, errors.New("credentials invalid")
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	if tx.Model(&models.Auth{}).Where(&auth).First(&auth).RecordNotFound() { // auth record not found
 		auth.Claim = user.Claim
 		auth.GameType = user.GameType
@@ -109,7 +109,7 @@ func Authenticate(token string, conditions ...AuthenticationCondition) (*models.
 	} else if res.Error != nil {
 		return nil, res.Error
 	}
-	if time.Now().After(auth.Expiration) { // check if token has not expired
+	if time.Now().UTC().After(auth.Expiration) { // check if token has not expired
 		return nil, &TokenExpirationError{err: "token has expired"}
 	}
 	for _, condition := range conditions { // check if all conditions hold
@@ -117,7 +117,7 @@ func Authenticate(token string, conditions ...AuthenticationCondition) (*models.
 			return nil, err
 		}
 	}
-	auth.Expiration = time.Now().Add(ExpirationDuration) // prolong expiry date
+	auth.Expiration = time.Now().UTC().Add(ExpirationDuration) // prolong expiry date
 	if err := database.DB.Model(&models.Auth{}).Save(&auth).Error; err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func GenerateNewToken(input ...string) string {
 
 // generate string of random chars of length `length`
 func GenerateRandomString(length int) string {
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UTC().UnixNano())
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ" +
 		"abcdefghijklmnopqrstuvwxyzåäö" +
 		"0123456789")

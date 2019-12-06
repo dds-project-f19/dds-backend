@@ -8,6 +8,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"log"
 	"strconv"
+	"time"
 )
 
 func launchService() {
@@ -211,7 +212,7 @@ var CronInstance *cron.Cron
 
 // Initialize Cron Scheduler service
 func LaunchScheduler() {
-	CronInstance = cron.New()
+	CronInstance = cron.New(cron.WithLocation(time.UTC))
 	PerformDBCronRecovery(CronInstance)
 	CronInstance.Start()
 }
