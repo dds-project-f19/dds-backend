@@ -76,7 +76,7 @@ func RemoveSchedule(username string) error {
 
 // Transform schedule into single formatted string for display in telegram bot
 func PrettySchedule(startTime models.TimePoint, endTime models.TimePoint, workdays []models.Weekday) string {
-	return fmt.Sprintf("Your schedule is:\n%s - %s\n%s", startTime.ToStr(),
+	return fmt.Sprintf("Your schedule is:\n%s - %s\n%s (UTC)", startTime.ToStr(),
 		endTime.ToStr(), models.PrettyWeekdays(workdays))
 }
 
@@ -171,7 +171,7 @@ func AddCronRange(c *cron.Cron, schedule models.UserSchedule) (cron.EntryID, cro
 	if err != nil {
 		return 0, 0, err
 	}
-	msgS := fmt.Sprintf("Your workday has begun (%s)", schedule.StartTime)
+	msgS := fmt.Sprintf("Your workday has begun (%s UTC)", schedule.StartTime)
 	id1, err := c.AddFunc(cstr, func() { ScheduleNotify(msgS, schedule.Username) })
 	if err != nil {
 		return 0, 0, err
@@ -186,7 +186,7 @@ func AddCronRange(c *cron.Cron, schedule models.UserSchedule) (cron.EntryID, cro
 		c.Remove(id1)
 		return 0, 0, err
 	}
-	msgE := fmt.Sprintf("Your workday has finished (%s). Your taken items were removed.", schedule.EndTime)
+	msgE := fmt.Sprintf("Your workday has finished (%s UTC). Your taken items were removed.", schedule.EndTime)
 	id2, err := c.AddFunc(cstr, func() { ScheduleNotify(msgE, schedule.Username); RemoveWorkerTakenItems(schedule.Username) })
 	if err != nil {
 		c.Remove(id1)
