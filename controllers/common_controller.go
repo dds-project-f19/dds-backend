@@ -29,9 +29,7 @@ func (a *CommonController) Login(c *gin.Context) {
 			a.JsonFail(c, http.StatusForbidden, err.Error())
 			return
 		}
-		c.SetCookie("dds-auth-gametype", auth.GameType, 60*60*12, "/", "", false, false)
-		c.SetCookie("dds-auth-claim", common.StringClaim(auth.Claim), 60*60*12, "/", "", false, false)
-		c.SetCookie("dds-auth-token", auth.Token, 60*60*12, "/", "", false, false)
+		common.SetDDSCookies(c, auth)
 		a.JsonSuccess(c, http.StatusOK, gin.H{})
 	} else {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
@@ -53,9 +51,7 @@ func (a *CommonController) Logout(c *gin.Context) {
 	if err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, err.Error())
 	}
-	c.SetCookie("dds-auth-gametype", "", -1, "/", "", false, false)
-	c.SetCookie("dds-auth-claim", "", -1, "/", "", false, false)
-	c.SetCookie("dds-auth-token", "", -1, "/", "", false, false)
+	common.CleanDDSCookies(c)
 	a.JsonSuccess(c, http.StatusOK, gin.H{})
 }
 

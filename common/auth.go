@@ -184,5 +184,27 @@ func CheckAuthConditional(c *gin.Context, conditions ...AuthenticationCondition)
 	if err != nil {
 		return nil, err
 	}
-	return Authenticate(token, conditions...) // check if token is valid
+	auth, err := Authenticate(token, conditions...) // check if token is valid
+	if err != nil {
+		CleanDDSCookies(c)
+	}
+	return auth, err
+}
+
+const (
+	COOKIE_NAME_GAMETYPE = "dds-auth-gametype"
+	COOKIE_NAME_CLAIM    = "dds-auth-claim"
+	COOKIE_NAME_TOKEN    = "dds-auth-token"
+)
+
+func SetDDSCookies(c *gin.Context, auth models.Auth) {
+	c.SetCookie(COOKIE_NAME_GAMETYPE, auth.GameType, 60*60*12, "/", "", false, false)
+	c.SetCookie(COOKIE_NAME_CLAIM, StringClaim(auth.Claim), 60*60*12, "/", "", false, false)
+	c.SetCookie(COOKIE_NAME_TOKEN, auth.Token, 60*60*12, "/", "", false, false)
+}
+
+func CleanDDSCookies(c *gin.Context) {
+	c.SetCookie(COOKIE_NAME_GAMETYPE, "", -1, "/", "", false, false)
+	c.SetCookie(COOKIE_NAME_CLAIM, "", -1, "/", "", false, false)
+	c.SetCookie(COOKIE_NAME_TOKEN, "", -1, "/", "", false, false)
 }
