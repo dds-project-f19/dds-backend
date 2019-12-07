@@ -53,6 +53,7 @@ func (a *CommonController) Logout(c *gin.Context) {
 	if err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, err.Error())
 	}
+	c.SetCookie("dds-auth-token", "", -1, "/", "", false, false)
 	a.JsonSuccess(c, http.StatusOK, gin.H{})
 }
 
