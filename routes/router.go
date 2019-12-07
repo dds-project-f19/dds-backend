@@ -27,6 +27,7 @@ func InitRouter() *gin.Engine {
 		common := new(controllers.CommonController)
 		commons.POST("/login", common.Login)
 		commons.GET("/telegram_join_link", common.GenerateTelegramJoinLink)
+		commons.POST("/logout", common.Logout)
 
 	}
 

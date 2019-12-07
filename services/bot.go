@@ -41,7 +41,7 @@ func GetChatRegistrationLink(username string) (string, error) {
 			return "", res.Error
 		}
 	}
-	return fmt.Sprintf("t.me/%s?start=%s", BotAlias, chat.RegistrationToken), nil
+	return fmt.Sprintf("https://t.me/%s?start=%s", BotAlias, chat.RegistrationToken), nil
 }
 
 // Find username of user that corresponds to given chat id

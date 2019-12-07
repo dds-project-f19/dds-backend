@@ -70,6 +70,12 @@ Usage of dds-backend:
 // 200: {"link":"t.me/bot_link/start=regkey123"}
 // 401, 500: {"message":"123"}
 
+// POST /common/logout
+// HEADERS: {Authorization: token}
+// {}
+// 200: {}
+// 401,500: {}
+
 // GET /worker/get
 // HEADERS: {Authorization: token}
 // {}
@@ -176,4 +182,5 @@ Usage of dds-backend:
 // {}
 // 200: {"available":false}
 // 401, 500: {"message":"123"}
+
 ```

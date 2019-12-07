@@ -38,6 +38,24 @@ func (a *CommonController) Login(c *gin.Context) {
 	}
 }
 
+// POST /common/logout
+// HEADERS: {Authorization: token}
+// {}
+// 200: {}
+// 401,500: {}
+func (a *CommonController) Logout(c *gin.Context) {
+	auth, err := common.CheckAuthConditional(c)
+	if err != nil {
+		a.JsonFail(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+	err = common.InvalidateToken(auth.Token)
+	if err != nil {
+		a.JsonFail(c, http.StatusInternalServerError, err.Error())
+	}
+	a.JsonSuccess(c, http.StatusOK, gin.H{})
+}
+
 // GET /common/telegram_join_link
 // HEADERS: {Authorization: token}
 // {}

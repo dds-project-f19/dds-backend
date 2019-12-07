@@ -124,6 +124,21 @@ func Authenticate(token string, conditions ...AuthenticationCondition) (*models.
 	return &auth, nil
 }
 
+func InvalidateToken(token string) error {
+	auth := models.Auth{Token: token}
+	res := database.DB.Model(&models.Auth{}).Where(&auth).First(&auth)
+	if res.RecordNotFound() {
+		return errors.New("token not found")
+	} else if res.Error != nil {
+		return res.Error
+	}
+	auth.Expiration = time.Now().UTC()
+	if err := database.DB.Model(&models.Auth{}).Save(&auth).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 // accept `input` string
 // return hash of `input` as string
 func Hash(input string) string {
