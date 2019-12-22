@@ -261,9 +261,9 @@ func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
 	}
 	type ScheduleRequest struct {
 		Username  string `binding:"required"`
-		StartTime string `binding:"required"`
-		EndTime   string `binding:"required"`
-		Workdays  string `binding:"required"`
+		StartTime string
+		EndTime   string
+		Workdays  string
 	}
 	request := ScheduleRequest{}
 
