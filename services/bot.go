@@ -165,7 +165,7 @@ func LaunchBot() {
 				// check if not registered and refuse further communication in that case
 				username, err := GetUsernameByChat(update.Message.Chat.ID)
 				if err != nil {
-					msg.Text = ""
+					msg.Text = "There is problem getting access to bot, contact your manager."
 				} else {
 					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "")
 					switch update.Message.Command() {
