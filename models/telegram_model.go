@@ -8,7 +8,7 @@ import (
 type TelegramChat struct {
 	gorm.Model
 	Username          string `gorm:"unique_index;not null"`
-	ChatID            int64  `gorm:"unique"`
+	ChatID            int64
 	RegistrationToken string `gorm:"unique"`
 	TokenExpiration   time.Time
 }

@@ -50,6 +50,7 @@ func (a *CommonController) Logout(c *gin.Context) {
 	err = common.InvalidateToken(auth.Token)
 	if err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, err.Error())
+		return
 	}
 	common.CleanDDSCookies(c)
 	a.JsonSuccess(c, http.StatusOK, gin.H{})
@@ -69,6 +70,7 @@ func (a *CommonController) GenerateTelegramJoinLink(c *gin.Context) {
 	link, err := services.GetChatRegistrationLink(auth.Username)
 	if err != nil {
 		a.JsonFail(c, http.StatusInternalServerError, err.Error())
+		return
 	}
 	a.JsonSuccess(c, http.StatusOK, gin.H{"link": link})
 }

@@ -268,6 +268,22 @@ func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
 	request := ScheduleRequest{}
 
 	if err := c.Bind(&request); err == nil {
+
+		wks, err := models.LoadWeekdays(request.Workdays)
+		if err != nil {
+			a.JsonFail(c, http.StatusBadRequest, "workdays ill-formed")
+			return
+		}
+		if len(wks) == 0 { // with empty weekdays remove schedule for worker
+			err = services.RemoveSchedule(request.Username)
+			if err != nil {
+				a.JsonFail(c, http.StatusInternalServerError, err.Error())
+				return
+			}
+			a.JsonSuccess(c, http.StatusOK, gin.H{})
+			return
+		}
+
 		t1, err := models.LoadTimePoint(request.StartTime)
 		if err != nil || !t1.IsValid() {
 			a.JsonFail(c, http.StatusBadRequest, "start time ill-formed")
@@ -276,11 +292,6 @@ func (a *ManagerController) SetWorkerSchedule(c *gin.Context) {
 		t2, err := models.LoadTimePoint(request.EndTime)
 		if err != nil || !t2.IsValid() {
 			a.JsonFail(c, http.StatusBadRequest, "end time ill-formed")
-			return
-		}
-		wks, err := models.LoadWeekdays(request.Workdays)
-		if err != nil {
-			a.JsonFail(c, http.StatusBadRequest, "workdays ill-formed")
 			return
 		}
 		if t2.Before(t1) {

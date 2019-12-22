@@ -101,6 +101,9 @@ var BotInstance *tgbotapi.BotAPI
 
 func SendNotification(username string, text string) error {
 	chatID, err := GetChatIDByUsername(username)
+	if chatID == 0 { // user has not yet registered with bot
+		return nil
+	}
 	if err != nil {
 		return err
 	}
